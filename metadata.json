@@ -1,0 +1,8 @@
+{
+  "name": "Tree Style History",
+  "description": "Tree Style History Chrome extension web viewer. Browse and explore browser history in an interactive hierarchical tree structure, linear history, closed tabs, and bookmarks.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

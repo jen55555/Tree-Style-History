@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Style History</title>
+    <meta name="description" content="Tree Style History Chrome extension web viewer. Browse and explore browser history in an interactive hierarchical tree structure, linear history, closed tabs, and bookmarks.">
+    <meta property="og:title" content="Tree Style History">
+    <meta property="og:description" content="Tree Style History Chrome extension web viewer. Browse and explore browser history in an interactive hierarchical tree structure, linear history, closed tabs, and bookmarks.">
+    <link rel="icon" type="image/png" href="images/tree-32.png">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body, html {
+            height: 100%;
+            width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f4f5f7;
+            color: #333;
+            overflow: hidden;
+        }
+        #app-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+        #top-bar {
+            height: 48px;
+            background: #ffffff;
+            border-bottom: 1px solid #e1e4e8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 100;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .branding {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            color: #24292e;
+            text-decoration: none;
+        }
+        .branding img {
+            width: 24px;
+            height: 24px;
+        }
+        .nav-tabs {
+            display: flex;
+            height: 100%;
+            gap: 2px;
+        }
+        .nav-tab {
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            height: 100%;
+            font-size: 13px;
+            font-weight: 500;
+            color: #586069;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .nav-tab:hover {
+            color: #24292e;
+            background-color: #f6f8fa;
+        }
+        .nav-tab.active {
+            color: #0366d6;
+            border-bottom-color: #0366d6;
+            background-color: #f1f8ff;
+            font-weight: 600;
+        }
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .action-btn {
+            font-size: 12px;
+            padding: 5px 10px;
+            background: #fafbfc;
+            border: 1px solid #d1d5da;
+            border-radius: 4px;
+            color: #444d56;
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s;
+        }
+        .action-btn:hover {
+            background: #f3f4f6;
+            border-color: #c0c4c8;
+        }
+        .lang-select {
+            font-size: 12px;
+            padding: 4px 8px;
+            border: 1px solid #d1d5da;
+            border-radius: 4px;
+            background: #fff;
+            color: #333;
+            cursor: pointer;
+            outline: none;
+        }
+        #viewport-container {
+            flex: 1;
+            width: 100%;
+            height: calc(100% - 48px);
+            position: relative;
+            background: #ffffff;
+        }
+        #app-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+        #popup-wrapper {
+            display: none;
+            width: 100%;
+            height: 100%;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 32px;
+            background: #f0f2f5;
+        }
+        #popup-card {
+            background: #fff;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #d8d8d8;
+            max-width: 460px;
+            width: 100%;
+            height: 580px;
+        }
+        #popup-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-shell">
+        <header id="top-bar">
+            <a href="#" class="branding" onclick="switchView('history2.html'); return false;">
+                <img src="images/tree-32.png" alt="Tree Style History Logo">
+                <span>Tree Style History</span>
+            </a>
+            <nav class="nav-tabs">
+                <a class="nav-tab active" data-src="history2.html" onclick="switchView('history2.html', this)">🌳 Tree History</a>
+                <a class="nav-tab" data-src="history.html" onclick="switchView('history.html', this)">📜 Linear History</a>
+                <a class="nav-tab" data-src="closed.html" onclick="switchView('closed.html', this)">❌ Closed Tabs</a>
+                <a class="nav-tab" data-src="bookmark.html" onclick="switchView('bookmark.html', this)">🔖 Bookmarks</a>
+                <a class="nav-tab" data-src="options.html" onclick="switchView('options.html', this)">⚙️ Options</a>
+                <a class="nav-tab" data-src="popup.html" data-is-popup="true" onclick="switchView('popup.html', this)">🪟 Extension Popup</a>
+            </nav>
+            <div class="actions">
+                <select id="lang-picker" class="lang-select" onchange="changeLanguage(this.value)">
+                    <option value="en">English</option>
+                    <option value="zh_CN">简体中文</option>
+                </select>
+                <a id="btn-open-direct" class="action-btn" href="history2.html" target="_blank" title="Open current page standalone">
+                    <span>↗ Full Page</span>
+                </a>
+            </div>
+        </header>
+        <main id="viewport-container">
+            <iframe id="app-iframe" src="history2.html"></iframe>
+            <div id="popup-wrapper">
+                <div id="popup-card">
+                    <iframe id="popup-iframe" src="popup.html"></iframe>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const appIframe = document.getElementById('app-iframe');
+        const popupWrapper = document.getElementById('popup-wrapper');
+        const popupIframe = document.getElementById('popup-iframe');
+        const btnOpenDirect = document.getElementById('btn-open-direct');
+        const langPicker = document.getElementById('lang-picker');
+
+        // Init language picker
+        const currentLang = localStorage.getItem('tsh-lang') || (navigator.language && navigator.language.startsWith('zh') ? 'zh_CN' : 'en');
+        langPicker.value = currentLang;
+
+        function switchView(src, tabEl) {
+            if (tabEl) {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                tabEl.classList.add('active');
+            }
+            btnOpenDirect.href = src;
+
+            if (src === 'popup.html') {
+                appIframe.style.display = 'none';
+                popupWrapper.style.display = 'flex';
+                popupIframe.src = 'popup.html';
+            } else {
+                popupWrapper.style.display = 'none';
+                appIframe.style.display = 'block';
+                appIframe.src = src;
+            }
+        }
+
+        function changeLanguage(lang) {
+            localStorage.setItem('tsh-lang', lang);
+            if (appIframe.style.display !== 'none') {
+                appIframe.contentWindow.location.reload();
+            } else {
+                popupIframe.contentWindow.location.reload();
+            }
+        }
+
+        // Listen for internal navigation from within iframes
+        window.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'tsh-navigate') {
+                const target = e.data.target;
+                const tab = document.querySelector(`.nav-tab[data-src="${target}"]`);
+                if (tab) {
+                    switchView(target, tab);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
