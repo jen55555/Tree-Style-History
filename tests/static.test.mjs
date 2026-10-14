@@ -58,6 +58,7 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const MANIFEST = readJson('manifest.json');
 const EN = readJson('_locales/en/messages.json');
 const ZH = readJson('_locales/zh_CN/messages.json');
+const TH = readJson('_locales/th/messages.json');
 
 // ---------------------------------------------------------------------------
 // manifest.json
@@ -103,6 +104,7 @@ test('manifest __MSG_*__ keys resolve in every locale', () => {
     for (const key of new Set(used)) {
         assert.ok(EN[key], `en is missing manifest key: ${key}`);
         assert.ok(ZH[key], `zh_CN is missing manifest key: ${key}`);
+        assert.ok(TH[key], `th is missing manifest key: ${key}`);
     }
 });
 
@@ -277,9 +279,10 @@ test('first-party scripts never reference jQuery or zTree globals', () => {
 // i18n coverage
 // ---------------------------------------------------------------------------
 
-test('en and zh_CN message files have identical key sets', () => {
+test('en, zh_CN, and th message files have identical key sets', () => {
     const en = Object.keys(EN).sort();
     const zh = Object.keys(ZH).sort();
+    const th = Object.keys(TH).sort();
     assert.deepEqual(
         en.filter((k) => !zh.includes(k)),
         [],
@@ -290,9 +293,19 @@ test('en and zh_CN message files have identical key sets', () => {
         [],
         'keys present in zh_CN but missing from en',
     );
+    assert.deepEqual(
+        en.filter((k) => !th.includes(k)),
+        [],
+        'keys present in en but missing from th',
+    );
+    assert.deepEqual(
+        th.filter((k) => !en.includes(k)),
+        [],
+        'keys present in th but missing from en',
+    );
 });
 
-test('every rendered .lang key resolves in both locales', () => {
+test('every rendered .lang key resolves in all locales', () => {
     const keys = new Set();
     for (const file of htmlFiles()) {
         for (const tag of collectTags(fs.readFileSync(path.join(CHROME_DIR, file), 'utf8'))) {
@@ -305,10 +318,11 @@ test('every rendered .lang key resolves in both locales', () => {
     for (const key of keys) {
         assert.ok(EN[key], `en missing data-lang-string key: ${key}`);
         assert.ok(ZH[key], `zh_CN missing data-lang-string key: ${key}`);
+        assert.ok(TH[key], `th missing data-lang-string key: ${key}`);
     }
 });
 
-test('every .help-tip element id resolves in both locales', () => {
+test('every .help-tip element id resolves in all locales', () => {
     // loadOptionsLang() does `el.title = returnLang(el.id)`, so the element id
     // doubles as an i18n key. A missing key yields an empty tooltip.
     const ids = new Set();
@@ -321,10 +335,11 @@ test('every .help-tip element id resolves in both locales', () => {
     for (const id of ids) {
         assert.ok(EN[id], `en missing help-tip key: ${id}`);
         assert.ok(ZH[id], `zh_CN missing help-tip key: ${id}`);
+        assert.ok(TH[id], `th missing help-tip key: ${id}`);
     }
 });
 
-test('every returnLang()/echoLang() key used in JS exists in both locales', () => {
+test('every returnLang()/echoLang() key used in JS exists in all locales', () => {
     const keys = new Set();
     walkScripts((_file, src) => {
         for (const m of src.matchAll(/(?:returnLang|echoLang)\(\s*'([^']+)'\s*\)/g)) keys.add(m[1]);
@@ -334,6 +349,7 @@ test('every returnLang()/echoLang() key used in JS exists in both locales', () =
     for (const key of keys) {
         assert.ok(EN[key], `en missing JS key: ${key}`);
         assert.ok(ZH[key], `zh_CN missing JS key: ${key}`);
+        assert.ok(TH[key], `th missing JS key: ${key}`);
     }
 });
 
@@ -373,6 +389,8 @@ const MODULES = [
     'scripts/modules/tree.js',
     'scripts/modules/ui-state.js',
     'scripts/modules/page-init.js',
+    'scripts/modules/backup-helper.js',
+    'scripts/modules/trash-manager.js',
 ];
 
 // The pages: a script reached by navigating to a real HTML file. Everything

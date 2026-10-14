@@ -550,5 +550,173 @@
     },
     "help25": {
         "message": "If the selected day has fewer records than this value, earlier days are loaded automatically until the count is reached."
+    },
+    "searchSource": {
+        "message": "Origin (Source / ต้นทาง)"
+    },
+    "searchDestination": {
+        "message": "Destination (Target / ปลายทาง)"
+    },
+    "advancedSearch": {
+        "message": "Advanced Search (ค้นหาละเอียด)"
+    },
+    "clearSearch": {
+        "message": "Clear (ล้าง)"
+    },
+    "searchStartDate": {
+        "message": "Start Date (วันเริ่มหา)"
+    },
+    "searchEndDate": {
+        "message": "End Date (วันที่สิ้นสุด)"
+    },
+    "searchTransition": {
+        "message": "Transition type (ประเภท)"
+    },
+    "quickDateFilter": {
+        "message": "Quick date presets (ช่วงเวลาด่วน)"
+    },
+    "todayPreset": {
+        "message": "Today (วันนี้)"
+    },
+    "yesterdayPreset": {
+        "message": "Yesterday (เมื่อวาน)"
+    },
+    "last7DaysPreset": {
+        "message": "Last 7 days (7 วัน)"
+    },
+    "last30DaysPreset": {
+        "message": "Last 30 days (30 วัน)"
+    },
+    "allTimePreset": {
+        "message": "All time (ทั้งหมด)"
+    },
+    "backupRestoreTitle": {
+        "message": "Backup & Restore (Google Drive)"
+    },
+    "googleDriveBackup": {
+        "message": "Backup to Google Drive"
+    },
+    "googleDriveRestore": {
+        "message": "Restore from Google Drive"
+    },
+    "googleDriveSync": {
+        "message": "Google Drive Cloud Backup"
+    },
+    "googleDriveConnected": {
+        "message": "Google Drive Connected"
+    },
+    "googleDriveNotConnected": {
+        "message": "Not connected to Google Drive"
+    },
+    "googleSignIn": {
+        "message": "Sign in with Google"
+    },
+    "googleSignOut": {
+        "message": "Sign out of Google"
+    },
+    "exportLocalJson": {
+        "message": "Export JSON Backup File"
+    },
+    "importLocalJson": {
+        "message": "Import JSON Backup File"
+    },
+    "confirmRestore": {
+        "message": "Are you sure you want to restore this backup? Your history records and settings will be merged/restored."
+    },
+    "restoreSuccess": {
+        "message": "Backup successfully restored!"
+    },
+    "backupSuccess": {
+        "message": "Backup successfully saved to Google Drive!"
+    },
+    "backingUp": {
+        "message": "Backing up..."
+    },
+    "restoring": {
+        "message": "Restoring..."
+    },
+    "backupFileName": {
+        "message": "Backup File Name"
+    },
+    "backupDate": {
+        "message": "Backup Date"
+    },
+    "backupSize": {
+        "message": "Records Count"
+    },
+    "noBackupsFound": {
+        "message": "No backups found on Google Drive."
+    },
+    "selectBackupToRestore": {
+        "message": "Select a backup to restore:"
+    },
+    "refreshBackups": {
+        "message": "Refresh Backups"
+    },
+    "deleteBackup": {
+        "message": "Delete Backup"
+    },
+    "confirmDeleteBackup": {
+        "message": "Are you sure you want to delete this backup from Google Drive?"
+    },
+    "backupDeleted": {
+        "message": "Backup deleted successfully."
+    },
+    "language": {
+        "message": "Language / ภาษา"
+    },
+    "thaiLanguage": {
+        "message": "Thai (ภาษาไทย)"
+    },
+    "trashRecovery": {
+        "message": "Recycle Bin & Recovery"
+    },
+    "trashTitle": {
+        "message": "History Recycle Bin"
+    },
+    "trashDesc": {
+        "message": "Temporarily keeps deleted browsing history to prevent accidental data loss. You can restore items at any time."
+    },
+    "restoreItem": {
+        "message": "Restore"
+    },
+    "restoreAll": {
+        "message": "Restore All"
+    },
+    "emptyTrash": {
+        "message": "Empty Recycle Bin"
+    },
+    "deletePermanently": {
+        "message": "Delete Permanently"
+    },
+    "undo": {
+        "message": "Undo"
+    },
+    "deletedMovedToTrash": {
+        "message": "Item(s) moved to Recycle Bin."
+    },
+    "trashEmpty": {
+        "message": "Recycle Bin is empty."
+    },
+    "confirmRestoreItem": {
+        "message": "Restore this item back to your browsing history?"
+    },
+    "confirmRestoreAll": {
+        "message": "Restore all deleted items back to your browsing history?"
+    },
+    "confirmEmptyTrash": {
+        "message": "Are you sure you want to permanently delete all items in the Recycle Bin? This action cannot be undone."
+    },
+    "deletedAt": {
+        "message": "Deleted Time"
+    },
+    "originalVisit": {
+        "message": "Visit Time"
+    },
+    "deleteNodePrompt": {
+        "message": "Move this history node to Recycle Bin?"
+    },
+    "deleteBranchPrompt": {
+        "message": "This node has sub-branches. Move the entire branch to Recycle Bin?"
     }
 }

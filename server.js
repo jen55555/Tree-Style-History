@@ -16,12 +16,25 @@ const WEB_DIR = path.join(__dirname, 'web');
 // Preload locale catalogues
 let enMessages = {};
 let zhMessages = {};
+let thMessages = {};
 try {
     enMessages = JSON.parse(fs.readFileSync(path.join(CHROME_DIR, '_locales/en/messages.json'), 'utf8'));
     zhMessages = JSON.parse(fs.readFileSync(path.join(CHROME_DIR, '_locales/zh_CN/messages.json'), 'utf8'));
+    thMessages = JSON.parse(fs.readFileSync(path.join(CHROME_DIR, '_locales/th/messages.json'), 'utf8'));
 } catch (err) {
     console.warn('[Server] Could not preload messages:', err.message);
 }
+
+// Serve firebase config
+app.get('/firebase-applet-config.json', (req, res) => {
+    const configPath = path.join(__dirname, 'firebase-applet-config.json');
+    if (fs.existsSync(configPath)) {
+        res.setHeader('Content-Type', 'application/json');
+        res.sendFile(configPath);
+    } else {
+        res.status(404).json({ error: 'Config not found' });
+    }
+});
 
 // Serve chrome-polyfill.js with bundled translations
 app.get('/chrome-polyfill.js', (req, res) => {
@@ -30,7 +43,8 @@ app.get('/chrome-polyfill.js', (req, res) => {
         const injection = `
 window.__TSH_MESSAGES__ = {
     en: ${JSON.stringify(enMessages)},
-    zh_CN: ${JSON.stringify(zhMessages)}
+    zh_CN: ${JSON.stringify(zhMessages)},
+    th: ${JSON.stringify(thMessages)}
 };
 `;
         res.setHeader('Content-Type', 'application/javascript; charset=utf-8');

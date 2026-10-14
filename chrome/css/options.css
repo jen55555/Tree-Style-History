@@ -532,3 +532,59 @@ input[type="button"]:active {
         }
     
     }
+
+.backup-action-btn {
+    padding: 7px 14px;
+    border: 1px solid #d1d5da;
+    border-radius: 5px;
+    background: #ffffff;
+    color: #24292e;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.backup-action-btn:hover {
+    background: #f6f8fa;
+    border-color: #c0c4c8;
+}
+
+.backup-action-btn.primary {
+    background: #0969da;
+    color: #ffffff;
+    border-color: #0969da;
+}
+
+.backup-action-btn.primary:hover {
+    background: #0854b0;
+    border-color: #0854b0;
+}
+
+.backup-action-btn.success {
+    background: #1f883d;
+    color: #ffffff;
+    border-color: #1f883d;
+}
+
+.backup-action-btn.success:hover {
+    background: #1a7f37;
+    border-color: #1a7f37;
+}
+
+#backup-status-msg.success {
+    display: block !important;
+    background: #def7ec;
+    color: #03543f;
+    border: 1px solid #bcf0da;
+}
+
+#backup-status-msg.error {
+    display: block !important;
+    background: #fde8e8;
+    color: #9b1c1c;
+    border: 1px solid #fbd5d5;
+}

@@ -134,7 +134,7 @@
     }
 
     // Locale messages
-    const currentLocale = (globalObj.localStorage.getItem('tsh-lang') || (navigator.language && navigator.language.startsWith('zh') ? 'zh_CN' : 'en'));
+    const currentLocale = (globalObj.localStorage.getItem('tsh-lang') || (navigator.language && navigator.language.startsWith('th') ? 'th' : (navigator.language && navigator.language.startsWith('zh') ? 'zh_CN' : 'en')));
     let localeMessages = (globalObj.__TSH_MESSAGES__ && globalObj.__TSH_MESSAGES__[currentLocale]) || {};
 
     const chromeStub = {
@@ -457,7 +457,9 @@
                     countReq.onsuccess = function() {
                         if (countReq.result === 0) {
                             const now = Date.now();
+                            const oneDay = 86400000;
                             const visits = [
+                                // Today's visits
                                 { visitId: 100, referringVisitId: 0, url: 'https://www.google.com/search?q=tree+style+history', title: 'Google Search - Tree Style History', visitTime: now - 3600000 * 4, transition: 'typed' },
                                 { visitId: 101, referringVisitId: 100, url: 'https://github.com/tumuyan/Tree-Style-History', title: 'GitHub - tumuyan/Tree-Style-History: Recent history in tree style', visitTime: now - 3600000 * 3.8, transition: 'link' },
                                 { visitId: 102, referringVisitId: 101, url: 'https://github.com/tumuyan/Tree-Style-History/releases', title: 'Releases · tumuyan/Tree-Style-History', visitTime: now - 3600000 * 3.5, transition: 'link' },
@@ -470,7 +472,22 @@
                                 { visitId: 204, referringVisitId: 203, url: 'https://vite.dev/guide/', title: 'Getting Started | Vite', visitTime: now - 3600000 * 1.2, transition: 'link' },
                                 { visitId: 300, referringVisitId: 0, url: 'https://en.wikipedia.org/wiki/Tree_structure', title: 'Tree structure - Wikipedia', visitTime: now - 3600000 * 0.9, transition: 'auto_bookmark' },
                                 { visitId: 301, referringVisitId: 300, url: 'https://en.wikipedia.org/wiki/Breadth-first_search', title: 'Breadth-first search - Wikipedia', visitTime: now - 3600000 * 0.6, transition: 'link' },
-                                { visitId: 302, referringVisitId: 301, url: 'https://en.wikipedia.org/wiki/Depth-first_search', title: 'Depth-first search - Wikipedia', visitTime: now - 3600000 * 0.3, transition: 'link' }
+                                { visitId: 302, referringVisitId: 301, url: 'https://en.wikipedia.org/wiki/Depth-first_search', title: 'Depth-first search - Wikipedia', visitTime: now - 3600000 * 0.3, transition: 'link' },
+
+                                // Yesterday's visits (now - 1 day)
+                                { visitId: 400, referringVisitId: 0, url: 'https://www.reddit.com/r/programming/', title: 'Programming - Reddit', visitTime: now - oneDay - 3600000 * 3, transition: 'typed' },
+                                { visitId: 401, referringVisitId: 400, url: 'https://github.com/trending', title: 'Trending repositories on GitHub today', visitTime: now - oneDay - 3600000 * 2.5, transition: 'link' },
+                                { visitId: 402, referringVisitId: 401, url: 'https://github.com/facebook/react', title: 'facebook/react: The library for web and native UIs', visitTime: now - oneDay - 3600000 * 2, transition: 'link' },
+
+                                // 3 days ago visits (now - 3 days)
+                                { visitId: 500, referringVisitId: 0, url: 'https://duckduckgo.com/?q=modern+javascript', title: 'modern javascript at DuckDuckGo', visitTime: now - oneDay * 3 - 3600000 * 4, transition: 'typed' },
+                                { visitId: 501, referringVisitId: 500, url: 'https://javascript.info/', title: 'The Modern JavaScript Tutorial', visitTime: now - oneDay * 3 - 3600000 * 3.5, transition: 'link' },
+                                { visitId: 502, referringVisitId: 501, url: 'https://javascript.info/async-await', title: 'Async/await - JavaScript Tutorial', visitTime: now - oneDay * 3 - 3600000 * 3, transition: 'link' },
+
+                                // 7 days ago visits (now - 7 days)
+                                { visitId: 600, referringVisitId: 0, url: 'https://news.ycombinator.com/show', title: 'Show HN | Hacker News', visitTime: now - oneDay * 7 - 3600000 * 5, transition: 'typed' },
+                                { visitId: 601, referringVisitId: 600, url: 'https://www.rust-lang.org/', title: 'Rust Programming Language', visitTime: now - oneDay * 7 - 3600000 * 4.5, transition: 'link' },
+                                { visitId: 602, referringVisitId: 601, url: 'https://doc.rust-lang.org/book/', title: 'The Rust Programming Language - The Rust Book', visitTime: now - oneDay * 7 - 3600000 * 4, transition: 'link' }
                             ];
                             for (const v of visits) {
                                 store.put(v);

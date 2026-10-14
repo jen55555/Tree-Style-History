@@ -10,6 +10,8 @@ import { alertLoadingHistory } from './modules/history-core.js';
 import { createTree, bindTreeSearch } from './modules/tree.js';
 import { modifierState } from './modules/ui-state.js';
 import { initPage } from './modules/page-init.js';
+import { openParentDriveModal } from './modules/backup-helper.js';
+import { moveToTrash, restoreAllTrash, showUndoToast, openParentTrashModal } from './modules/trash-manager.js';
 
 initPage();
 
@@ -46,6 +48,26 @@ document.addEventListener('DOMContentLoaded', function () {
             showCalendar();
         });
     }
+
+    var driveBackupMenu = $('menu-drive-backup');
+    if (driveBackupMenu) {
+        driveBackupMenu.addEventListener('click', function (e) {
+            e.preventDefault();
+            openParentDriveModal();
+        });
+    }
+
+    var trashRecoveryMenu = $('menu-trash-recovery');
+    if (trashRecoveryMenu) {
+        trashRecoveryMenu.addEventListener('click', function (e) {
+            e.preventDefault();
+            openParentTrashModal();
+        });
+    }
+
+    window.addEventListener('tsh-history-restored', function () {
+        loadHistory('yes', '');
+    });
 
     // updateFilter();
 
@@ -132,10 +154,93 @@ document.addEventListener('DOMContentLoaded', function () {
     // The tree itself: scripts/modules/tree.js renders the same class
     // vocabulary zTree did, so css/zTreeStyle.css still draws the icons, the
     // connector line and the indentation. jQuery, zTree, its locally patched
-    // exhide extension and fuzzysearch.js are gone from this page — see the
-    // header comment in modules/tree.js for what replaced them and why.
-    var tree = createTree($('treeDemo'), { onClick: onClickNodeUrl });
-    bindTreeSearch(tree, { input: '#rh-search', tags: '#search-tag a' });
+    function onDeleteNode(event, treeId, node) {
+        if (!node || node.id <= 3) return;
+        var currentLang = localStorage['tsh-lang'] || 'th';
+        var children = tree.childrenOf(node);
+        var hasChildren = children.length > 0;
+
+        var confirmMsg = currentLang === 'th'
+            ? 'ต้องการย้ายรายการประวัตินี้ไปยังถังขยะหรือไม่?'
+            : 'Move this history node to Recycle Bin?';
+        if (hasChildren) {
+            confirmMsg = currentLang === 'th'
+                ? 'รายการนี้มีกิ่งก้านสาขาย่อยอีก ' + children.length + ' รายการ ต้องการย้ายทั้งหมดไปยังถังขยะหรือไม่?'
+                : 'This node has ' + children.length + ' sub-branches. Move the entire branch to Recycle Bin?';
+        }
+
+        if (!window.confirm(confirmMsg + '\n\n' + (node.name || node.t))) return;
+
+        var toDelete = [node];
+        if (hasChildren) {
+            var queue = Array.from(children);
+            while (queue.length > 0) {
+                var child = queue.shift();
+                toDelete.push(child);
+                var grandKids = tree.childrenOf(child);
+                for (var g = 0; g < grandKids.length; g++) {
+                    queue.push(grandKids[g]);
+                }
+            }
+        }
+
+        if (typeof dbManager !== 'undefined' && dbManager.deleteVisitItems) {
+            var visitIds = toDelete.map(function (n) { return n.id; }).filter(function (id) { return id !== null && id !== undefined; });
+            dbManager.deleteVisitItems(visitIds).catch(function (e) { console.warn('DB delete warning:', e); });
+        }
+
+        var trashEntries = moveToTrash(toDelete.map(function (n) {
+            return {
+                visitId: n.id,
+                referringVisitId: n.pId,
+                title: n.name,
+                url: n.t,
+                visitTime: n.visitTime,
+                transition: n.transition
+            };
+        }), 'tree');
+
+        tree.removeNode(node);
+
+        var undoMsg = currentLang === 'th'
+            ? 'ย้ายประวัติ ' + toDelete.length + ' รายการไปที่ถังขยะแล้ว'
+            : 'Moved ' + toDelete.length + ' item(s) to Recycle Bin';
+
+        showUndoToast(undoMsg, async function () {
+            var ids = trashEntries.map(function (it) { return it.id; });
+            await restoreAllTrash(ids);
+            loadHistory('yes', '');
+        });
+    }
+
+    var tree = createTree($('treeDemo'), {
+        onClick: onClickNodeUrl,
+        onDelete: onDeleteNode,
+        showDelete: true
+    });
+    bindTreeSearch(tree, {
+        input: '#rh-search',
+        sourceInput: '#rh-search-source',
+        destInput: '#rh-search-dest',
+        transitionSelect: '#rh-search-trans',
+        startDateInput: '#rh-search-start-date',
+        endDateInput: '#rh-search-end-date',
+        presetBtns: '.btn-preset-date',
+        clearBtn: '#btn-clear-search',
+        toggleBtn: '#btn-toggle-adv',
+        drawer: '#adv-search-drawer',
+        statusEl: '#adv-search-summary',
+        tags: '#search-tag a',
+        onDateRangeChange: function (startDateStr, endDateStr) {
+            if (startDateStr || endDateStr) {
+                var startTs = startDateStr ? new Date(startDateStr + 'T00:00:00').getTime() : 0;
+                var endTs = endDateStr ? new Date(endDateStr + 'T23:59:59.999').getTime() : Date.now();
+                pre_History(startTs, endTs);
+            } else {
+                pre_History(0, 0);
+            }
+        }
+    });
     tree.setNodes(nNodes);
 
     var transition_value = {
@@ -285,18 +390,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (filtUrl(v.url) == false) {
                     let node = {
-                    id: v.visitId,
-                    pId: parseInt(v.referringVisitId),
-                    // The raw title: a page title is attacker-controlled,
-                    // and escaping it is the renderer's job — it knows it
-                    // is writing text content, and it has to escape after
-                    // highlighting or a keyword cuts an entity in half.
-                    name: TimeToStr(v.visitTime, true, true) + " - " + v.title + ' ' + transitionIcon,
-                        // url: v.url,
+                        id: v.visitId,
+                        pId: parseInt(v.referringVisitId),
+                        name: TimeToStr(v.visitTime, true, true) + " - " + v.title + ' ' + transitionIcon,
                         icon: getFaviconUrl(v.url.replace(/(?<![\/])\/[^\/].+/, "")),
                         open: true,
                         transition: v.transition,
-                        t: v.url //+ " "+v.referringVisitId + ">"+v.visitId
+                        visitTime: v.visitTime,
+                        t: v.url
                     };
 
                     tag[transitionIcon] = true;
@@ -311,44 +412,46 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 zNodes = zNodes.concat(yNodes);
 
-                if (zNodes.length < localStorage['load-range4'] && loadfrom - DAY * t > date - localStorage['load-range3'] * DAY) {
+                if (loadfrom > 0 && loadto > 0) {
+                    // Exact date range bounded query completed in one cursor pass
+                } else if (zNodes.length < localStorage['load-range4'] && loadfrom - DAY * t > date - localStorage['load-range3'] * DAY) {
                     feach_History(loadfrom, loadto, t + 1);
-                } else {
-                    // No "remove every node first" pass: zNodes is the whole
-                    // set, and setNodes() replaces it in one render. Removing
-                    // them one by one re-rendered the tree once per row.
-                    if (zNodes.length > 0 && showLessItem == 'yes') {
+                    return;
+                }
 
-                        let urls = {};
+                // No "remove every node first" pass: zNodes is the whole
+                // set, and setNodes() replaces it in one render. Removing
+                // them one by one re-rendered the tree once per row.
+                if (zNodes.length > 0 && showLessItem == 'yes') {
 
-                        for (let s = 0; s < zNodes.length; s++) {
-                            let ss = zNodes[s];
-                            while (pIDs[ss.id] != true) {
-                                if (ss.transition == 'reload' || urls[ss.url] == true) {
-                                    zNodes.splice(s, 1);
-                                } else {
-                                    urls[ss.url] = true;
-                                    break;
-                                }
+                    let urls = {};
 
-                                if (s < zNodes.length)
-                                    ss = zNodes[s];
-                                else
-                                    break;
+                    for (let s = 0; s < zNodes.length; s++) {
+                        let ss = zNodes[s];
+                        while (pIDs[ss.id] != true) {
+                            if (ss.transition == 'reload' || urls[ss.url] == true) {
+                                zNodes.splice(s, 1);
+                            } else {
+                                urls[ss.url] = true;
+                                break;
                             }
+
+                            if (s < zNodes.length)
+                                ss = zNodes[s];
+                            else
+                                break;
                         }
                     }
-
-                    tree.setNodes(zNodes.length > 0 ? zNodes : mNodes);
-                    $('calendar-total-value').textContent = zNodes.length;
-
-                    // $('header-text').set('text',new Date(loadfrom-DAY*t).toLocaleString()+' - '+new Date(loadto).toLocaleString());
-                    $('header-text').textContent = timeStr2(new Date(loadfrom - DAY * t), false) + ' ~ ' + timeStr2(new Date(loadto), true);
-                    refreshSearchTags();
-                    // 
-                    alertLoadingHistory(true);
-                    console.log(" pre_History() finish :( ");
                 }
+
+                tree.setNodes(zNodes.length > 0 ? zNodes : mNodes);
+                tree.filterAdvanced(tree.getFilter());
+                $('calendar-total-value').textContent = zNodes.length;
+
+                $('header-text').textContent = timeStr2(new Date(loadfrom - DAY * t), false) + ' ~ ' + timeStr2(new Date(loadto), true);
+                refreshSearchTags();
+                alertLoadingHistory(true);
+                console.log(" pre_History() finish :( ");
 
 
 

@@ -9,6 +9,9 @@ import {
     loadSlider, loadOptionsLang, addFilteredItem, mergeList
 } from './modules/config.js';
 import { initPage } from './modules/page-init.js';
+import {
+    downloadLocalJson, readAndRestoreJsonFile, openParentDriveModal
+} from './modules/backup-helper.js';
 
 initPage();
 
@@ -173,6 +176,77 @@ document.addEventListener('DOMContentLoaded', function () {
     $('mergeList').addEventListener('click', function () {mergeList(); });
     
     
+
+    // Language switcher
+    var langSelect = $('option-lang-select');
+    if (langSelect) {
+        var curLang = localStorage.getItem('tsh-lang') || 'en';
+        langSelect.value = curLang;
+        langSelect.addEventListener('change', function () {
+            localStorage.setItem('tsh-lang', this.value);
+            location.reload();
+        });
+    }
+
+    // Backup & Restore
+    var exportBtn = $('btn-export-local-json');
+    var importInput = $('input-import-local-json');
+    var statusMsg = $('backup-status-msg');
+
+    function showStatus(msg, isSuccess) {
+        if (!statusMsg) return;
+        statusMsg.textContent = msg;
+        statusMsg.className = isSuccess ? 'success' : 'error';
+        setTimeout(function () {
+            statusMsg.style.display = 'none';
+        }, 5000);
+    }
+
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function () {
+            downloadLocalJson()
+                .then(function (res) {
+                    showStatus(returnLang('backupSuccess') || ('Exported ' + res.fileName), true);
+                })
+                .catch(function (err) {
+                    showStatus('Export failed: ' + err.message, false);
+                });
+        });
+    }
+
+    if (importInput) {
+        importInput.addEventListener('change', function () {
+            if (!this.files || this.files.length === 0) return;
+            var file = this.files[0];
+            var confirmText = returnLang('confirmRestore');
+            if (window.confirm(confirmText)) {
+                readAndRestoreJsonFile(file)
+                    .then(function () {
+                        showStatus(returnLang('restoreSuccess'), true);
+                        setTimeout(function () {
+                            location.reload();
+                        }, 1200);
+                    })
+                    .catch(function (err) {
+                        showStatus('Restore failed: ' + err.message, false);
+                    });
+            }
+            this.value = '';
+        });
+    }
+
+    var driveSigninBtn = $('btn-drive-signin');
+    var driveSyncBtn = $('btn-drive-sync-now');
+    if (driveSigninBtn) {
+        driveSigninBtn.addEventListener('click', function () {
+            openParentDriveModal();
+        });
+    }
+    if (driveSyncBtn) {
+        driveSyncBtn.addEventListener('click', function () {
+            openParentDriveModal();
+        });
+    }
 
     // var UserAgent = navigator.userAgent.toLowerCase();
     // if(UserAgent.indexOf('edg')>0)

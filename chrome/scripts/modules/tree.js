@@ -105,7 +105,15 @@ function indexNodes(nodes) {
 function treeHtml(nodes, opts) {
     const options = opts || {};
     const treeId = options.treeId || 'tree';
-    const keyword = options.keyword || '';
+    const keyword = options.keyword ? String(options.keyword).trim() : '';
+    const source = options.source ? String(options.source).trim() : '';
+    const destination = options.destination ? String(options.destination).trim() : '';
+    const transition = options.transition ? String(options.transition).trim() : '';
+    const startDateStr = options.startDate ? String(options.startDate).trim() : '';
+    const endDateStr = options.endDate ? String(options.endDate).trim() : '';
+    const startTimestamp = startDateStr ? new Date(startDateStr + 'T00:00:00').getTime() : 0;
+    const endTimestamp = endDateStr ? new Date(endDateStr + 'T23:59:59.999').getTime() : Infinity;
+    const hasDateFilter = Boolean(startDateStr || endDateStr);
     const urlKey = options.urlKey || 't';
     const ids = options.ids || new Map();
 
@@ -114,24 +122,127 @@ function treeHtml(nodes, opts) {
         return ids.get(node);
     };
 
-    const matches = function (node) {
-        const needle = keyword.toLowerCase();
+    const matchesNeedle = function (node, needle) {
+        if (!needle) return true;
+        const q = needle.toLowerCase();
         const name = node.name == null ? '' : String(node.name);
         const url = node[urlKey] == null ? '' : String(node[urlKey]);
-        return name.toLowerCase().indexOf(needle) !== -1
-            || url.toLowerCase().indexOf(needle) !== -1;
+        return name.toLowerCase().indexOf(q) !== -1 || url.toLowerCase().indexOf(q) !== -1;
     };
+
+    const matchesTransition = function (node, trans) {
+        if (!trans) return true;
+        if (node.transition && String(node.transition).toLowerCase() === trans.toLowerCase()) return true;
+        if (node.name && node.name.indexOf(trans) !== -1) return true;
+        return false;
+    };
+
+    const matchesDate = function (node) {
+        if (!hasDateFilter) return true;
+        if (node.visitTime === undefined || node.visitTime === null) return false;
+        return node.visitTime >= startTimestamp && node.visitTime <= endTimestamp;
+    };
+
+    const matches = function (node) {
+        return matchesNeedle(node, keyword) && matchesTransition(node, transition) && matchesDate(node);
+    };
+
+    const sourceNodes = new Set();
+    const destNodes = new Set();
+    const pathNodes = new Set();
 
     /** Matches plus their ancestors: a match buried in a branch is no use if
      *  the branch above it is hidden. */
     const visibleSet = function (idx) {
-        if (!keyword) return null;
+        const hasAdvanced = Boolean(source || destination || transition || hasDateFilter);
+        if (!keyword && !hasAdvanced) return null;
+
         const visible = new Set();
+
+        // Case 1: Both source and destination specified -> trace origin-to-destination paths
+        if (source && destination) {
+            for (const d of nodes) {
+                if (!matchesNeedle(d, destination) || !matchesTransition(d, transition) || !matchesDate(d)) continue;
+
+                // Walk up ancestor chain looking for a node matching source
+                const chain = [];
+                let cur = d;
+                let foundSource = null;
+                for (let guard = 0; cur && guard < nodes.length; guard++) {
+                    chain.push(cur);
+                    if (cur !== d && matchesNeedle(cur, source) && (!hasDateFilter || cur.visitTime == null || matchesDate(cur))) {
+                        foundSource = cur;
+                        break;
+                    }
+                    cur = idx.byId.get(String(cur.pId));
+                }
+
+                if (foundSource) {
+                    destNodes.add(d);
+                    sourceNodes.add(foundSource);
+                    for (const n of chain) {
+                        visible.add(n);
+                        if (n !== d && n !== foundSource) {
+                            pathNodes.add(n);
+                        }
+                    }
+                    let p = idx.byId.get(String(foundSource.pId));
+                    for (let guard = 0; p && guard < nodes.length; guard++) {
+                        visible.add(p);
+                        p = idx.byId.get(String(p.pId));
+                    }
+                }
+            }
+            return visible;
+        }
+
+        // Case 2: Only source specified -> show source nodes and all their descendants
+        if (source && !destination) {
+            for (const s of nodes) {
+                if (!matchesNeedle(s, source) || !matchesTransition(s, transition) || !matchesDate(s)) continue;
+                sourceNodes.add(s);
+                visible.add(s);
+
+                let p = idx.byId.get(String(s.pId));
+                for (let guard = 0; p && guard < nodes.length; guard++) {
+                    visible.add(p);
+                    p = idx.byId.get(String(p.pId));
+                }
+
+                const queue = (idx.children.get(s) || []).slice();
+                while (queue.length > 0) {
+                    const child = queue.shift();
+                    visible.add(child);
+                    const grandKids = idx.children.get(child);
+                    if (grandKids) {
+                        for (const gk of grandKids) queue.push(gk);
+                    }
+                }
+            }
+            return visible;
+        }
+
+        // Case 3: Only destination specified -> show destination and its origin ancestors
+        if (!source && destination) {
+            for (const d of nodes) {
+                if (!matchesNeedle(d, destination) || !matchesTransition(d, transition) || !matchesDate(d)) continue;
+                destNodes.add(d);
+                visible.add(d);
+
+                let p = idx.byId.get(String(d.pId));
+                for (let guard = 0; p && guard < nodes.length; guard++) {
+                    visible.add(p);
+                    p = idx.byId.get(String(p.pId));
+                }
+            }
+            return visible;
+        }
+
+        // Case 4: Standard keyword and/or transition/date filter
         for (const n of nodes) {
             if (!matches(n)) continue;
             visible.add(n);
             let parent = idx.byId.get(String(n.pId));
-            // Guard against a pId cycle, which would otherwise loop forever.
             for (let guard = 0; parent && guard < nodes.length; guard++) {
                 visible.add(parent);
                 parent = idx.byId.get(String(parent.pId));
@@ -141,24 +252,27 @@ function treeHtml(nodes, opts) {
     };
 
     /**
-     * Escape the name and wrap every hit in a highlight span.
-     *
-     * `name` is PLAIN TEXT — a page title as the browser reported it — and this
-     * is where it becomes HTML. It used to be the caller's job, which meant
-     * every future call site had to remember it (history2.js only deleted '<'
-     * and '>'), and the highlight then ran over already-escaped text, where a
-     * keyword like "amp" cuts `&amp;` in half and prints a mangled row.
-     *
-     * So the match is made on the raw text and each piece — before, inside and
-     * after a hit — is escaped separately: nothing is escaped twice, and no
-     * highlight can land inside an entity. The keyword is regex-quoted because
-     * it is typed by the user and would otherwise throw on `a(`.
+     * Escape the name and wrap hits in highlight spans and badges.
      */
     const nameHtml = function (node) {
         const name = node.name == null ? '' : String(node.name);
-        if (!keyword) return escapeHtmlText(name);
+        let badges = '';
+        if (sourceNodes.has(node)) {
+            badges += '<span class="badge-source" style="background:#1d4ed8;color:#ffffff;padding:1px 5px;border-radius:3px;font-size:11px;margin-right:4px;font-weight:bold;">[ต้นทาง]</span>';
+        }
+        if (destNodes.has(node)) {
+            badges += '<span class="badge-dest" style="background:#047857;color:#ffffff;padding:1px 5px;border-radius:3px;font-size:11px;margin-right:4px;font-weight:bold;">[ปลายทาง]</span>';
+        }
+        if (pathNodes.has(node) && !sourceNodes.has(node) && !destNodes.has(node)) {
+            badges += '<span class="badge-path" style="background:#b45309;color:#ffffff;padding:1px 4px;border-radius:3px;font-size:10px;margin-right:4px;font-weight:600;">[ทางผ่าน]</span>';
+        }
 
-        const re = new RegExp(escapeRegExp(keyword), 'gi');
+        const activeKeyword = keyword || (sourceNodes.has(node) ? source : (destNodes.has(node) ? destination : ''));
+        if (!activeKeyword) {
+            return badges + escapeHtmlText(name);
+        }
+
+        const re = new RegExp(escapeRegExp(activeKeyword), 'gi');
         let out = '';
         let last = 0;
         let hit;
@@ -166,12 +280,9 @@ function treeHtml(nodes, opts) {
             out += escapeHtmlText(name.slice(last, hit.index));
             out += `<span style="${HIGHLIGHT}">${escapeHtmlText(hit[0])}</span>`;
             last = hit.index + hit[0].length;
-            // A zero-width match would leave lastIndex where it is and loop
-            // forever. escapeRegExp('') cannot produce one today, but the
-            // keyword is user input and this is a render loop.
             if (hit[0] === '') re.lastIndex++;
         }
-        return out + escapeHtmlText(name.slice(last));
+        return badges + out + escapeHtmlText(name.slice(last));
     };
 
     const nodeHtml = function (node, level, isLast, idx, visible) {
@@ -184,15 +295,19 @@ function treeHtml(nodes, opts) {
         const open = node.open !== false;
         const prefix = `${treeId}_${tid}`;
 
-        // A custom icon (the favicon) replaces the folder/file glyph entirely.
         const icoStyle = node.icon
             ? ` style="background:url('${cssUrl(node.icon)}') 0 0 no-repeat;"` : '';
+
+        const deleteBtn = (options.showDelete && node.id > 3)
+            ? `<span class="node-delete-btn" title="Move to Recycle Bin">✕</span>`
+            : '';
 
         let html = `<li id="${prefix}" class="level${level}" data-tid="${tid}">`
             + `<span id="${prefix}_switch" class="button switch ${switchClass(level, isLast, hasChildren, open)}"></span>`
             + `<a id="${prefix}_a" class="level${level}" title="${escapeHtmlAttr(node[urlKey])}">`
             + `<span id="${prefix}_ico" class="button ico ${icoClass(hasChildren, open)}"${icoStyle}></span>`
             + `<span id="${prefix}_span">${nameHtml(node)}</span>`
+            + deleteBtn
             + '</a>';
 
         if (hasChildren) {
@@ -216,22 +331,22 @@ function treeHtml(nodes, opts) {
  * @param {HTMLElement} container the <ul> to render into
  * @param {object} [opts]
  * @param {Function} [opts.onClick] (event, treeId, node)
+ * @param {Function} [opts.onDelete] (event, treeId, node)
+ * @param {boolean}  [opts.showDelete] whether to render the delete button
  * @param {string}   [opts.urlKey]  node field holding the URL (default `t`)
  */
 function createTree(container, opts) {
     const options = opts || {};
     const onClick = options.onClick || function () {};
+    const onDelete = options.onDelete || null;
+    const showDelete = Boolean(options.showDelete || options.onDelete);
     const urlKey = options.urlKey || 't';
     const treeId = container.id || 'tree';
 
     let nodes = [];
     let keyword = '';
-    // Node objects are the identity: the same node keeps its element id across
-    // renders, so a click can be mapped back to it.
+    let filterOpts = {};
     const ids = new Map();
-    // Kept between renders because callers walk it: closed.js reopens every
-    // page under the group that was clicked, which is a question about the
-    // data, not about the markup.
     let index = indexNodes(nodes);
 
     function byTid(tid) {
@@ -241,16 +356,21 @@ function createTree(container, opts) {
 
     function render() {
         index = indexNodes(nodes);
-        container.innerHTML = treeHtml(nodes, { treeId, keyword, urlKey, ids });
+        container.innerHTML = treeHtml(nodes, Object.assign({ treeId, keyword, urlKey, ids, showDelete }, filterOpts));
     }
 
-    // Delegated: rows are re-rendered wholesale on every filter, so a listener
-    // per row would have to be re-bound each time.
     container.addEventListener('click', function (event) {
         const row = event.target.closest ? event.target.closest('li[data-tid]') : null;
         if (!row) return;
         const node = byTid(Number(row.dataset.tid));
         if (!node) return;
+
+        if (event.target.closest && event.target.closest('.node-delete-btn')) {
+            event.stopPropagation();
+            event.preventDefault();
+            if (onDelete) onDelete(event, treeId, node);
+            return;
+        }
 
         if (event.target.closest && event.target.closest('.switch')) {
             toggle(node);
@@ -259,7 +379,6 @@ function createTree(container, opts) {
         onClick(event, treeId, node);
     });
 
-    /** Collapse in place: re-rendering would lose the scroll position. */
     function toggle(node) {
         const open = node.open === false;
         node.open = open;
@@ -268,28 +387,22 @@ function createTree(container, opts) {
         const sw = document.getElementById(`${prefix}_switch`);
         if (list) list.style.display = open ? 'block' : 'none';
         if (sw) {
-            // Only the open/close half changes; the root/center/bottom shape is
-            // decided by position and stays as rendered.
             sw.className = sw.className.replace(/_open|_close/, open ? '_open' : '_close');
         }
     }
 
     return {
-        /** Replace everything. */
         setNodes(list) {
             nodes = Array.from(list || []);
             render();
         },
-        /** Append, keeping what is already there. */
         addNodes(list) {
             nodes = nodes.concat(Array.from(list || []));
             render();
         },
-        /** The roots, in insertion order. */
         getNodes() {
             return index.roots;
         },
-        /** Direct children of a node, in insertion order. */
         childrenOf(node) {
             return index.children.get(node) || [];
         },
@@ -301,70 +414,228 @@ function createTree(container, opts) {
             nodes = [];
             render();
         },
-        /** Show only matches (and their ancestors); empty shows everything. */
         filter(text) {
-            keyword = text == null ? '' : String(text);
+            if (typeof text === 'object' && text !== null) {
+                filterOpts = text;
+                keyword = filterOpts.keyword || '';
+            } else {
+                filterOpts = {};
+                keyword = text == null ? '' : String(text);
+            }
+            render();
+        },
+        filterAdvanced(adv) {
+            filterOpts = adv || {};
+            keyword = filterOpts.keyword || '';
             render();
         },
         getKeyword() {
             return keyword;
         },
+        getFilter() {
+            return Object.assign({ keyword }, filterOpts);
+        },
     };
 }
 
 /**
- * Wire the filter box and the transition-icon tags to a tree.
- *
- * Replaces fuzzysearch.js, which bound the same two things through jQuery and
- * hid nodes with the patched exhide extension.
- *
- * @param {object} tree
- * @param {object} opts
- * @param {string}   opts.input     selector for the filter box
- * @param {string}   [opts.tags]    selector for the clickable filter tags
- * @param {Function} [opts.onStart] called while a keystroke is pending
- * @param {Function} [opts.onEnd]   called once the filter has been applied
- * @param {number}   [opts.delay]   debounce in ms
+ * Wire the filter box, advanced origin/dest inputs, date range, and transition tags to a tree.
  */
 function bindTreeSearch(tree, opts) {
     const input = document.querySelector(opts.input);
+    const sourceInput = opts.sourceInput ? document.querySelector(opts.sourceInput) : null;
+    const destInput = opts.destInput ? document.querySelector(opts.destInput) : null;
+    const transSelect = opts.transitionSelect ? document.querySelector(opts.transitionSelect) : null;
+    const startDateInput = opts.startDateInput ? document.querySelector(opts.startDateInput) : null;
+    const endDateInput = opts.endDateInput ? document.querySelector(opts.endDateInput) : null;
+    const presetBtns = opts.presetBtns ? Array.from(document.querySelectorAll(opts.presetBtns)) : [];
+    const clearBtn = opts.clearBtn ? document.querySelector(opts.clearBtn) : null;
+    const toggleBtn = opts.toggleBtn ? document.querySelector(opts.toggleBtn) : null;
+    const drawerEl = opts.drawer ? document.querySelector(opts.drawer) : null;
+    const statusEl = opts.statusEl ? document.querySelector(opts.statusEl) : null;
     const tags = opts.tags ? Array.from(document.querySelectorAll(opts.tags)) : [];
     const delay = opts.delay === undefined ? 500 : opts.delay;
 
     let timer = null;
     let last = '';
+    let lastStartDate = '';
+    let lastEndDate = '';
 
-    function run(text) {
-        // onStart fires on every keystroke, the first one included: it is what
-        // puts the "searching" state up, and gating it on `timer` meant the
-        // first keystroke — the one that starts the wait — never showed it.
+    function getCriteria() {
+        const text = input ? input.value : '';
+        const src = sourceInput ? sourceInput.value : '';
+        const dst = destInput ? destInput.value : '';
+        const trans = transSelect ? transSelect.value : '';
+        const sDate = startDateInput ? startDateInput.value : '';
+        const eDate = endDateInput ? endDateInput.value : '';
+        return {
+            keyword: text,
+            source: src,
+            destination: dst,
+            transition: trans,
+            startDate: sDate,
+            endDate: eDate
+        };
+    }
+
+    function formatDateIso(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    function runSearch(immediate) {
         if (opts.onStart) opts.onStart();
         if (timer) clearTimeout(timer);
-        timer = setTimeout(function () {
-            // Cleared on fire as well as on cancel: a timer that already went
-            // off is not pending, and run() has to be able to tell the two
-            // apart or it calls onStart for a search that already finished.
+
+        const execute = function () {
             timer = null;
-            if (text === last) return;
-            tree.filter(text);
-            last = text;
+            const crit = getCriteria();
+            const key = JSON.stringify(crit);
+            if (key === last) return;
+            last = key;
+
+            if (crit.source || crit.destination || crit.transition || crit.startDate || crit.endDate) {
+                tree.filterAdvanced(crit);
+            } else {
+                tree.filter(crit.keyword);
+            }
+
+            if (clearBtn) {
+                const hasAny = Boolean(crit.keyword || crit.source || crit.destination || crit.transition || crit.startDate || crit.endDate);
+                clearBtn.style.display = hasAny ? 'inline-block' : 'none';
+            }
+
+            if (statusEl) {
+                const parts = [];
+                if (crit.source && crit.destination) {
+                    parts.push(`เส้นทาง: "${crit.source}" ➔ "${crit.destination}"`);
+                } else if (crit.source) {
+                    parts.push(`ต้นทาง: "${crit.source}"`);
+                } else if (crit.destination) {
+                    parts.push(`ปลายทาง: "${crit.destination}"`);
+                }
+                if (crit.startDate || crit.endDate) {
+                    const s = crit.startDate || 'ก่อนหน้า';
+                    const e = crit.endDate || 'ปัจจุบัน';
+                    parts.push(`ช่วงเวลา: ${s} ถึง ${e}`);
+                }
+                if (crit.transition) {
+                    parts.push(`ประเภท: ${crit.transition}`);
+                }
+                if (parts.length > 0) {
+                    statusEl.textContent = 'ผลการค้นหาแบบละเอียด ➔ ' + parts.join(' | ');
+                    statusEl.style.display = 'block';
+                } else {
+                    statusEl.style.display = 'none';
+                }
+            }
+
+            if (opts.onDateRangeChange && (crit.startDate !== lastStartDate || crit.endDate !== lastEndDate)) {
+                lastStartDate = crit.startDate;
+                lastEndDate = crit.endDate;
+                opts.onDateRangeChange(crit.startDate, crit.endDate);
+            }
+
             if (opts.onEnd) opts.onEnd();
-        }, delay);
+        };
+
+        if (immediate) {
+            execute();
+        } else {
+            timer = setTimeout(execute, delay);
+        }
     }
 
-    // `input`, not `keyup`: it also covers paste and the clear button.
     if (input) {
-        input.addEventListener('input', function () { run(input.value); });
+        input.addEventListener('input', function () { runSearch(false); });
+    }
+    if (sourceInput) {
+        sourceInput.addEventListener('input', function () { runSearch(false); });
+    }
+    if (destInput) {
+        destInput.addEventListener('input', function () { runSearch(false); });
+    }
+    if (transSelect) {
+        transSelect.addEventListener('change', function () { runSearch(true); });
+    }
+    if (startDateInput) {
+        startDateInput.addEventListener('change', function () {
+            presetBtns.forEach(function (b) { b.classList.remove('active'); });
+            runSearch(true);
+        });
+    }
+    if (endDateInput) {
+        endDateInput.addEventListener('change', function () {
+            presetBtns.forEach(function (b) { b.classList.remove('active'); });
+            runSearch(true);
+        });
     }
 
-    // Clicking the tag that is already filtering clears it — a toggle, which
-    // is what fuzzysearch.js did with `lastKeyword`.
+    for (let pIdx = 0; pIdx < presetBtns.length; pIdx++) {
+        (function (btn) {
+            btn.addEventListener('click', function () {
+                const preset = btn.dataset.preset;
+                const now = new Date();
+                presetBtns.forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+
+                if (preset === 'today') {
+                    const todayStr = formatDateIso(now);
+                    if (startDateInput) startDateInput.value = todayStr;
+                    if (endDateInput) endDateInput.value = todayStr;
+                } else if (preset === 'yesterday') {
+                    const yest = new Date(now.getTime() - 86400000);
+                    const yestStr = formatDateIso(yest);
+                    if (startDateInput) startDateInput.value = yestStr;
+                    if (endDateInput) endDateInput.value = yestStr;
+                } else if (preset === '7days') {
+                    const start = new Date(now.getTime() - 7 * 86400000);
+                    if (startDateInput) startDateInput.value = formatDateIso(start);
+                    if (endDateInput) endDateInput.value = formatDateIso(now);
+                } else if (preset === '30days') {
+                    const start = new Date(now.getTime() - 30 * 86400000);
+                    if (startDateInput) startDateInput.value = formatDateIso(start);
+                    if (endDateInput) endDateInput.value = formatDateIso(now);
+                } else if (preset === 'all') {
+                    if (startDateInput) startDateInput.value = '';
+                    if (endDateInput) endDateInput.value = '';
+                    btn.classList.remove('active');
+                }
+                runSearch(true);
+            });
+        })(presetBtns[pIdx]);
+    }
+
+    if (toggleBtn && drawerEl) {
+        toggleBtn.addEventListener('click', function () {
+            const isOpen = drawerEl.style.display !== 'none';
+            drawerEl.style.display = isOpen ? 'none' : 'block';
+            toggleBtn.classList.toggle('active', !isOpen);
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            if (input) input.value = '';
+            if (sourceInput) sourceInput.value = '';
+            if (destInput) destInput.value = '';
+            if (transSelect) transSelect.value = '';
+            if (startDateInput) startDateInput.value = '';
+            if (endDateInput) endDateInput.value = '';
+            presetBtns.forEach(function (b) { b.classList.remove('active'); });
+            runSearch(true);
+        });
+    }
+
     for (const tag of tags) {
         tag.addEventListener('click', function () {
             let text = tag.textContent || '';
-            if (last.indexOf(text) >= 0) text = '';
+            const crit = getCriteria();
+            if (crit.keyword.indexOf(text) >= 0) text = '';
             if (input) input.value = text;
-            run(text);
+            runSearch(false);
         });
     }
 }

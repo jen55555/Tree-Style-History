@@ -15,6 +15,7 @@ const TARGETS = [
     'manifest.json',
     '_locales/en/messages.json',
     '_locales/zh_CN/messages.json',
+    '_locales/th/messages.json',
 ];
 
 let failed = 0;

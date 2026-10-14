@@ -55,6 +55,23 @@ function swallowHashClicks() {
     });
 }
 
+function initSidebarModals() {
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest) return;
+        if (e.target.closest('#menu-drive-backup')) {
+            e.preventDefault();
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'tsh-open-backup' }, '*');
+            }
+        } else if (e.target.closest('#menu-trash-recovery')) {
+            e.preventDefault();
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'tsh-open-trash' }, '*');
+            }
+        }
+    });
+}
+
 // Every page script calls this once, on import. The work itself waits for
 // DOMContentLoaded — see applyZoom() for why none of it can run earlier.
 export function initPage() {
@@ -62,6 +79,7 @@ export function initPage() {
         applyZoom();
         fillLangStrings();
         swallowHashClicks();
+        initSidebarModals();
     });
     console.log('Tree Style History v' + getVersion() + ' (' + getVersionType() + ')');
 }

@@ -8,6 +8,7 @@ import { filtUrl } from './config.js';
 // `history` from here, and going through it closed an import cycle.
 import { save_calendar_storage2 } from './shared/calendar-storage.js';
 import { modifierState, ITEM_SELECTED_COLOR } from './ui-state.js';
+import { moveToTrash, restoreAllTrash, showUndoToast } from './trash-manager.js';
 
 // How long one tick of the chunked render loop may run before yielding.
 //
@@ -648,10 +649,26 @@ function deleteHistoryItem(w) {
         if ($$(into + ' .checkbox input:checked').length > 0) {
             document.title = 'Deleting...';
             alertLoadingHistory(true);
+            var deletedRecords = [];
             Array.from($$(into + ' .checkbox input:checked')).forEach(function (el) {
-                el.closest('div.item-holder').remove();
-                chrome.history.deleteUrl({ url: el.value });
+                var itemHolder = el.closest('div.item-holder');
+                var url = el.value;
+                var title = itemHolder ? (itemHolder.querySelector('.title')?.textContent || url) : url;
+                deletedRecords.push({ url: url, title: title });
+                if (itemHolder) itemHolder.remove();
+                chrome.history.deleteUrl({ url: url });
             });
+            if (deletedRecords.length > 0) {
+                var newItems = moveToTrash(deletedRecords, 'linear');
+                var tMsg = (typeof localStorage !== 'undefined' && localStorage.getItem('tsh-lang') === 'th')
+                    ? `ลบประวัติ ${deletedRecords.length} รายการแล้ว`
+                    : `Deleted ${deletedRecords.length} item(s)`;
+                showUndoToast(tMsg, async function () {
+                    var ids = newItems.map(function (it) { return it.id; });
+                    await restoreAllTrash(ids);
+                    history('yes', '');
+                });
+            }
             chrome.history.search({ text: '', maxResults: 1, startTime: (new Date()).getTime() - (24 * 3600 * 1000), endTime: (new Date()).getTime() }, function (hi) {
                 if (grp == 'yes') {
                     Array.from($$(into + ' .group-holder')).forEach(function (gel) {

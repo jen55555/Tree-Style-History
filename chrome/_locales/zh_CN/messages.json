@@ -550,5 +550,173 @@
     },
     "deleteCacheTip": {
         "message": "清除缓存"
+    },
+    "searchSource": {
+        "message": "起始页面 (ต้นทาง)"
+    },
+    "searchDestination": {
+        "message": "目标页面 (ปลายทาง)"
+    },
+    "advancedSearch": {
+        "message": "高级搜索 (ค้นหาละเอียด)"
+    },
+    "clearSearch": {
+        "message": "清除 (ล้าง)"
+    },
+    "searchStartDate": {
+        "message": "起始日期 (วันเริ่มหา)"
+    },
+    "searchEndDate": {
+        "message": "结束日期 (วันที่สิ้นสุด)"
+    },
+    "searchTransition": {
+        "message": "访问方式 (ประเภท)"
+    },
+    "quickDateFilter": {
+        "message": "快速日期 (ช่วงเวลาด่วน)"
+    },
+    "todayPreset": {
+        "message": "今天 (วันนี้)"
+    },
+    "yesterdayPreset": {
+        "message": "昨天 (เมื่อวาน)"
+    },
+    "last7DaysPreset": {
+        "message": "最近7天 (7 วัน)"
+    },
+    "last30DaysPreset": {
+        "message": "最近30天 (30 วัน)"
+    },
+    "allTimePreset": {
+        "message": "全部 (ทั้งหมด)"
+    },
+    "backupRestoreTitle": {
+        "message": "备份与恢复 (Google Drive)"
+    },
+    "googleDriveBackup": {
+        "message": "备份至 Google Drive"
+    },
+    "googleDriveRestore": {
+        "message": "从 Google Drive 恢复"
+    },
+    "googleDriveSync": {
+        "message": "Google Drive 云备份"
+    },
+    "googleDriveConnected": {
+        "message": "已连接 Google Drive"
+    },
+    "googleDriveNotConnected": {
+        "message": "未连接 Google Drive"
+    },
+    "googleSignIn": {
+        "message": "使用 Google 登录"
+    },
+    "googleSignOut": {
+        "message": "退出 Google 登录"
+    },
+    "exportLocalJson": {
+        "message": "导出本地 JSON 备份"
+    },
+    "importLocalJson": {
+        "message": "导入本地 JSON 备份"
+    },
+    "confirmRestore": {
+        "message": "确定要恢复此备份吗？您的浏览历史和设置将被合并恢复。"
+    },
+    "restoreSuccess": {
+        "message": "备份恢复成功！"
+    },
+    "backupSuccess": {
+        "message": "已成功备份到 Google Drive！"
+    },
+    "backingUp": {
+        "message": "正在备份..."
+    },
+    "restoring": {
+        "message": "正在恢复..."
+    },
+    "backupFileName": {
+        "message": "备份文件名"
+    },
+    "backupDate": {
+        "message": "备份日期"
+    },
+    "backupSize": {
+        "message": "记录条数"
+    },
+    "noBackupsFound": {
+        "message": "Google Drive 上未找到备份文件。"
+    },
+    "selectBackupToRestore": {
+        "message": "选择要恢复的备份："
+    },
+    "refreshBackups": {
+        "message": "刷新备份列表"
+    },
+    "deleteBackup": {
+        "message": "删除备份"
+    },
+    "confirmDeleteBackup": {
+        "message": "确定要从 Google Drive 中删除此备份吗？"
+    },
+    "backupDeleted": {
+        "message": "备份已成功删除。"
+    },
+    "language": {
+        "message": "语言 / ภาษา"
+    },
+    "thaiLanguage": {
+        "message": "泰语 (ภาษาไทย)"
+    },
+    "trashRecovery": {
+        "message": "回收站与删除恢复"
+    },
+    "trashTitle": {
+        "message": "历史记录回收站"
+    },
+    "trashDesc": {
+        "message": "临时存储已删除的浏览历史，防止意外丢失。您可以随时恢复或彻底删除。"
+    },
+    "restoreItem": {
+        "message": "恢复"
+    },
+    "restoreAll": {
+        "message": "全部恢复"
+    },
+    "emptyTrash": {
+        "message": "清空回收站"
+    },
+    "deletePermanently": {
+        "message": "永久删除"
+    },
+    "undo": {
+        "message": "撤销"
+    },
+    "deletedMovedToTrash": {
+        "message": "已将选定项移至回收站。"
+    },
+    "trashEmpty": {
+        "message": "回收站为空，暂无已删除的记录。"
+    },
+    "confirmRestoreItem": {
+        "message": "确定将此记录恢复到您的浏览历史中吗？"
+    },
+    "confirmRestoreAll": {
+        "message": "确定要将所有已删除记录恢复到浏览历史中吗？"
+    },
+    "confirmEmptyTrash": {
+        "message": "确定要永久清空回收站中的所有项目吗？此操作无法撤销。"
+    },
+    "deletedAt": {
+        "message": "删除时间"
+    },
+    "originalVisit": {
+        "message": "原始访问时间"
+    },
+    "deleteNodePrompt": {
+        "message": "将此历史节点移入回收站？"
+    },
+    "deleteBranchPrompt": {
+        "message": "此节点包含子分支，是否将整条分支移入回收站？"
     }
 }

@@ -802,7 +802,288 @@ div[rel="grey"] {
     ul.ztree {
         max-width: 100%;
     }
+}
 
+/* --- Advanced Search Box (Origin & Destination / ค้นหาแบบละเอียด ต้นทาง-ปลายทาง) --- */
+#adv-search-container {
+    display: inline-block;
+    vertical-align: middle;
+    text-align: left;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
 
+.search-primary-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+}
 
+.search-primary-bar .search-box {
+    width: 220px;
+    padding: 6px 10px;
+    border: 1px solid #bfbfbf;
+    border-radius: 4px;
+    font-size: 13px;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.search-primary-bar .search-box:focus {
+    border-color: #1d4ed8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.15);
+}
+
+.btn-adv-toggle {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #374151;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.btn-adv-toggle:hover, .btn-adv-toggle.active {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+    color: #111827;
+}
+
+.btn-adv-toggle.active {
+    background: #dbeafe;
+    border-color: #93c5fd;
+    color: #1e40af;
+}
+
+.btn-adv-clear {
+    display: none;
+    padding: 5px 8px;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 4px;
+    color: #b91c1c;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.btn-adv-clear:hover {
+    background: #fecaca;
+}
+
+#adv-search-drawer {
+    margin-top: 8px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.adv-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.adv-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.adv-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.badge-source-label {
+    background: #1d4ed8;
+    color: #ffffff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    display: inline-block;
+}
+
+.badge-dest-label {
+    background: #047857;
+    color: #ffffff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    display: inline-block;
+}
+
+.badge-date-label {
+    background: #7c3aed;
+    color: #ffffff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    display: inline-block;
+}
+
+.adv-arrow-col {
+    font-size: 16px;
+    color: #64748b;
+    font-weight: bold;
+    padding-top: 14px;
+}
+
+.adv-input {
+    width: 200px;
+    padding: 5px 8px;
+    font-size: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+}
+
+.adv-date-input {
+    width: 155px;
+    cursor: pointer;
+}
+
+.adv-row-date {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #cbd5e1;
+}
+
+.date-presets-btn-group {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.btn-preset-date {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-preset-date:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.btn-preset-date.active {
+    background: #7c3aed;
+    border-color: #6d28d9;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.adv-select {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+}
+
+.adv-summary {
+    margin-top: 6px;
+    padding: 4px 8px;
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    border-radius: 4px;
+    color: #0369a1;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+    #adv-search-drawer {
+        background: #334155;
+        border-color: #475569;
+        color: #f1f5f9;
+    }
+    .search-primary-bar .search-box {
+        background: #1e293b;
+        color: #f8fafc;
+        border-color: #475569;
+    }
+    .btn-adv-toggle {
+        background: #334155;
+        color: #e2e8f0;
+        border-color: #475569;
+    }
+    .adv-input, .adv-select {
+        background: #1e293b;
+        color: #f8fafc;
+        border-color: #475569;
+    }
+    .adv-row-date {
+        border-top-color: #475569;
+    }
+    .btn-preset-date {
+        background: #334155;
+        border-color: #475569;
+        color: #e2e8f0;
+    }
+    .btn-preset-date:hover {
+        background: #475569;
+        color: #f8fafc;
+    }
+    .btn-preset-date.active {
+        background: #7c3aed;
+        border-color: #6d28d9;
+        color: #ffffff;
+    }
+    .adv-field-label {
+        color: #cbd5e1;
+    }
+}
+
+/* Tree Node Delete Button (Trash Recovery System) */
+.ztree li a {
+    position: relative;
+}
+
+.node-delete-btn {
+    display: none;
+    margin-left: 8px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 3px;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    padding: 2px 5px;
+    vertical-align: middle;
+    transition: all 0.15s ease;
+}
+
+.ztree li:hover > a .node-delete-btn {
+    display: inline-block;
+}
+
+.node-delete-btn:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+#navigation-menu ul li a#menu-trash-recovery {
+    color: #991b1b;
+}
+
+#navigation-menu ul li a#menu-trash-recovery:hover {
+    color: #ef4444;
 }

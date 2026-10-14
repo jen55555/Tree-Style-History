@@ -21,11 +21,14 @@
             <li><a href="closed.html" class="lang" data-lang-string="closeHistory"></a></li>
             <li><a href="bookmark.html" class="lang" data-lang-string="linerBookMark"></a></li>
             <li><a href="options.html" class="lang selected" data-lang-string="options"></a></li>
+            <li><a href="#" id="menu-drive-backup" class="lang" data-lang-string="googleDriveBackup"></a></li>
+            <li><a href="#" id="menu-trash-recovery" class="lang" data-lang-string="trashRecovery"></a></li>
         </ul>
     </div>
     <div id="options">
         <div id="options-tabs">
             <a id="tab-options" class="tab" href="#"><span class="lang" data-lang-string="options"></span></a>
+            <a id="tab-backup" class="tab" href="#"><span class="lang" data-lang-string="backupRestoreTitle"></span></a>
             <!-- <a id="tab-changelog" class="tab" href="#"><span>Changelog</span></a> -->
             <a id="tab-about" class="tab" href="#"><span class="lang" data-lang-string="about"></span></a>
         </div>
@@ -612,6 +615,60 @@
       <p><b>1.1 (2010/02/02)</b> - No more duplicate history items.</p>
       </div>
      -->
+        <div class="tab-content" id="tab-backup-content" style="display:none;">
+            <h2 style="margin-top:0;" class="lang" data-lang-string="backupRestoreTitle"></h2>
+
+            <h3 class="lang" data-lang-string="language"></h3>
+            <table>
+                <tr>
+                    <td class="cell-left"><label class="lang" data-lang-string="language"></label></td>
+                    <td class="cell-right">
+                        <select id="option-lang-select" style="min-width: 180px; padding: 4px;">
+                            <option value="en">English</option>
+                            <option value="zh_CN">简体中文</option>
+                            <option value="th">ภาษาไทย (Thai)</option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+            <hr>
+
+            <h3 class="lang" data-lang-string="googleDriveSync"></h3>
+            <p class="lang" data-lang-string="tip5"></p>
+            <div id="drive-status-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                    <div>
+                        <div id="drive-conn-badge" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; font-size:13px; color:#475569;">
+                            <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#94a3b8;"></span>
+                            <span id="drive-conn-text" class="lang" data-lang-string="googleDriveNotConnected"></span>
+                        </div>
+                        <div id="drive-user-info" style="font-size:12px; color:#64748b; margin-top:4px;"></div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" id="btn-drive-signin" class="backup-action-btn primary">
+                            <span class="lang" data-lang-string="googleSignIn"></span>
+                        </button>
+                        <button type="button" id="btn-drive-sync-now" class="backup-action-btn success">
+                            <span class="lang" data-lang-string="googleDriveBackup"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="lang" data-lang-string="exportLocalJson"></h3>
+            <p class="lang" data-lang-string="treePolicy"></p>
+            <div style="display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;">
+                <button type="button" id="btn-export-local-json" class="backup-action-btn">
+                    📥 <span class="lang" data-lang-string="exportLocalJson"></span>
+                </button>
+                <label for="input-import-local-json" class="backup-action-btn" style="cursor:pointer; display:inline-flex; align-items:center;">
+                    📤 <span class="lang" data-lang-string="importLocalJson"></span>
+                </label>
+                <input type="file" id="input-import-local-json" accept=".json" style="display:none;">
+            </div>
+            <div id="backup-status-msg" style="margin-top:14px; font-size:13px; display:none; padding:8px 12px; border-radius:4px;"></div>
+        </div>
+
         <div class="tab-content" id="tab-about-content">
             <h2 style="margin-top:0;" class="lang" data-lang-string="about"></h2>
             <p><img class="non-retina" src="images/tree-128.png"><img class="retina" src="images/tree.png"></p>

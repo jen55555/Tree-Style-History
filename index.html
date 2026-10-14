@@ -8,6 +8,7 @@
     <meta property="og:title" content="Tree Style History">
     <meta property="og:description" content="Tree Style History Chrome extension web viewer. Browse and explore browser history in an interactive hierarchical tree structure, linear history, closed tabs, and bookmarks.">
     <link rel="icon" type="image/png" href="images/tree-32.png">
+    <script src="web/drive-sync.bundle.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -105,6 +106,16 @@
             background: #f3f4f6;
             border-color: #c0c4c8;
         }
+        .action-btn.btn-backup-accent {
+            background: #0969da;
+            color: #ffffff;
+            border-color: #0969da;
+            font-weight: 500;
+        }
+        .action-btn.btn-backup-accent:hover {
+            background: #0854b0;
+            border-color: #0854b0;
+        }
         .lang-select {
             font-size: 12px;
             padding: 4px 8px;
@@ -152,6 +163,234 @@
             height: 100%;
             border: none;
         }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal-card {
+            background: #ffffff;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 650px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+        }
+        .modal-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 20px;
+            color: #64748b;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .modal-close:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* Google Sign-in Button Styles */
+        .gsi-material-button {
+            background-color: #ffffff;
+            border: 1px solid #747775;
+            border-radius: 4px;
+            box-sizing: border-box;
+            color: #1f1f1f;
+            cursor: pointer;
+            font-family: 'Roboto', arial, sans-serif;
+            font-size: 14px;
+            height: 40px;
+            letter-spacing: 0.25px;
+            outline: none;
+            overflow: hidden;
+            padding: 0 12px;
+            position: relative;
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+            width: auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color .218s, border-color .218s, box-shadow .218s;
+        }
+        .gsi-material-button:hover {
+            box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .30), 0 1px 3px 1px rgba(60, 64, 67, .15);
+            background-color: #f7fafe;
+        }
+        .gsi-material-button-content-wrapper {
+            align-items: center;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            height: 100%;
+            justify-content: space-between;
+            position: relative;
+            width: 100%;
+        }
+        .gsi-material-button-icon {
+            height: 20px;
+            margin-right: 12px;
+            min-width: 20px;
+            width: 20px;
+        }
+        .gsi-material-button-contents {
+            font-weight: 500;
+        }
+
+        /* Backup card components */
+        .sync-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .btn-sync-action {
+            padding: 8px 14px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #1e293b;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .btn-sync-action:hover {
+            background: #f1f5f9;
+        }
+        .btn-sync-action.primary {
+            background: #0969da;
+            color: #ffffff;
+            border-color: #0969da;
+        }
+        .btn-sync-action.primary:hover {
+            background: #0854b0;
+        }
+        .btn-sync-action.success {
+            background: #15803d;
+            color: #ffffff;
+            border-color: #15803d;
+        }
+        .btn-sync-action.success:hover {
+            background: #166534;
+        }
+        .btn-sync-action.danger {
+            background: #dc2626;
+            color: #ffffff;
+            border-color: #dc2626;
+        }
+        .btn-sync-action.danger:hover {
+            background: #b91c1c;
+        }
+        .btn-sync-action:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .backup-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        .backup-table th {
+            text-align: left;
+            padding: 8px 10px;
+            background: #f1f5f9;
+            color: #475569;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        .backup-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+        }
+        .backup-status-banner {
+            padding: 10px 14px;
+            border-radius: 5px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .backup-status-banner.info {
+            display: block;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+        .backup-status-banner.success {
+            display: block;
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .backup-status-banner.error {
+            display: block;
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
     </style>
 </head>
 <body>
@@ -162,20 +401,25 @@
                 <span>Tree Style History</span>
             </a>
             <nav class="nav-tabs">
-                <a class="nav-tab active" data-src="history2.html" onclick="switchView('history2.html', this)">🌳 Tree History</a>
-                <a class="nav-tab" data-src="history.html" onclick="switchView('history.html', this)">📜 Linear History</a>
-                <a class="nav-tab" data-src="closed.html" onclick="switchView('closed.html', this)">❌ Closed Tabs</a>
-                <a class="nav-tab" data-src="bookmark.html" onclick="switchView('bookmark.html', this)">🔖 Bookmarks</a>
-                <a class="nav-tab" data-src="options.html" onclick="switchView('options.html', this)">⚙️ Options</a>
-                <a class="nav-tab" data-src="popup.html" data-is-popup="true" onclick="switchView('popup.html', this)">🪟 Extension Popup</a>
+                <a id="tab-nav-tree" class="nav-tab active" data-src="history2.html" onclick="switchView('history2.html', this)">🌳 Tree History</a>
+                <a id="tab-nav-linear" class="nav-tab" data-src="history.html" onclick="switchView('history.html', this)">📜 Linear History</a>
+                <a id="tab-nav-closed" class="nav-tab" data-src="closed.html" onclick="switchView('closed.html', this)">❌ Closed Tabs</a>
+                <a id="tab-nav-bookmark" class="nav-tab" data-src="bookmark.html" onclick="switchView('bookmark.html', this)">🔖 Bookmarks</a>
+                <a id="tab-nav-options" class="nav-tab" data-src="options.html" onclick="switchView('options.html', this)">⚙️ Options</a>
+                <a id="tab-nav-popup" class="nav-tab" data-src="popup.html" data-is-popup="true" onclick="switchView('popup.html', this)">🪟 Extension Popup</a>
             </nav>
             <div class="actions">
+                <button id="btn-backup-modal" class="action-btn btn-backup-accent" onclick="openBackupModal()" title="Backup & Restore to Google Drive">
+                    <span>☁️</span>
+                    <span id="label-backup-btn">สำรองข้อมูล / Backup</span>
+                </button>
                 <select id="lang-picker" class="lang-select" onchange="changeLanguage(this.value)">
                     <option value="en">English</option>
                     <option value="zh_CN">简体中文</option>
+                    <option value="th">ภาษาไทย (Thai)</option>
                 </select>
                 <a id="btn-open-direct" class="action-btn" href="history2.html" target="_blank" title="Open current page standalone">
-                    <span>↗ Full Page</span>
+                    <span id="label-full-page">↗ Full Page</span>
                 </a>
             </div>
         </header>
@@ -189,6 +433,121 @@
         </main>
     </div>
 
+    <!-- Google Drive Backup & Restore Modal -->
+    <div id="backup-modal-overlay" class="modal-overlay" onclick="handleOverlayClick(event)">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>
+                    <span>☁️</span>
+                    <span id="modal-title-text">สำรองและกู้คืนข้อมูล (Google Drive & JSON)</span>
+                </h3>
+                <button type="button" class="modal-close" onclick="closeBackupModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="backup-alert-banner" class="backup-status-banner"></div>
+
+                <!-- Google Account Section -->
+                <div class="sync-card">
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <div style="font-weight:600; font-size:14px; color:#1e293b; display:flex; align-items:center; gap:6px;">
+                                <span id="drive-conn-dot" style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#94a3b8;"></span>
+                                <span id="drive-conn-status">ยังไม่ได้เชื่อมต่อ Google Drive</span>
+                            </div>
+                            <div id="drive-account-email" style="font-size:12px; color:#64748b; margin-top:3px;">
+                                เชื่อมต่อเพื่อป้องกันข้อมูลประวัติการเข้าชมสูญหายจากการถูกลบ
+                            </div>
+                        </div>
+                        <div id="drive-auth-btn-container">
+                            <button id="btn-google-login" class="gsi-material-button" onclick="handleGoogleSignIn()">
+                                <div class="gsi-material-button-state"></div>
+                                <div class="gsi-material-button-content-wrapper">
+                                    <div class="gsi-material-button-icon">
+                                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style="display: block;">
+                                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                                            <path fill="none" d="M0 0h48v48H0z"></path>
+                                        </svg>
+                                    </div>
+                                    <span class="gsi-material-button-contents" id="label-gsi">Sign in with Google</span>
+                                </div>
+                            </button>
+                            <button id="btn-google-logout" class="btn-sync-action danger" style="display:none;" onclick="handleGoogleSignOut()">
+                                🚪 <span id="label-signout">ออกจากระบบ Google</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div style="margin-bottom:18px;">
+                    <h4 style="font-size:13px; color:#475569; margin-bottom:8px;" id="label-backup-actions">ดำเนินการสำรองข้อมูล</h4>
+                    <div class="btn-group">
+                        <button type="button" id="btn-backup-drive" class="btn-sync-action primary" onclick="handleBackupToDrive()">
+                            <span>☁️</span>
+                            <span id="label-backup-drive-btn">สำรองข้อมูลไป Google Drive</span>
+                        </button>
+                        <button type="button" class="btn-sync-action" onclick="handleExportLocal()">
+                            <span>📥</span>
+                            <span id="label-export-local-btn">ส่งออก JSON ลงเครื่อง</span>
+                        </button>
+                        <label for="input-import-file" class="btn-sync-action" style="cursor:pointer;">
+                            <span>📤</span>
+                            <span id="label-import-local-btn">นำเข้า JSON จากเครื่อง</span>
+                        </label>
+                        <input type="file" id="input-import-file" accept=".json" style="display:none;" onchange="handleImportLocal(this)">
+                    </div>
+                </div>
+
+                <!-- Google Drive Backups List -->
+                <div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                        <h4 style="font-size:13px; color:#475569;" id="label-drive-backups-title">ไฟล์สำรองใน Google Drive</h4>
+                        <button type="button" class="btn-sync-action" style="padding:4px 8px; font-size:11px;" onclick="loadDriveBackupsList()">
+                            🔄 <span id="label-refresh-btn">รีเฟรช</span>
+                        </button>
+                    </div>
+                    <div id="drive-backups-container" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; min-height:100px; max-height:220px; overflow-y:auto;">
+                        <div id="drive-backups-loading" style="padding:20px; text-align:center; color:#64748b; font-size:12px;">
+                            เข้าสู่ระบบ Google เพื่อดูไฟล์สำรองบน Google Drive
+                        </div>
+                        <table id="drive-backups-table" class="backup-table" style="display:none;">
+                            <thead>
+                                <tr>
+                                    <th id="th-filename">ชื่อไฟล์</th>
+                                    <th id="th-date">วันที่สำรอง</th>
+                                    <th id="th-actions" style="text-align:right;">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="drive-backups-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-sync-action" onclick="closeBackupModal()" id="label-close-modal">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal for Destructive Operations -->
+    <div id="confirm-modal-overlay" class="modal-overlay" style="z-index:1100;">
+        <div class="modal-card" style="max-width:440px;">
+            <div class="modal-header">
+                <h3 id="confirm-modal-title">ยืนยันการดำเนินการ</h3>
+            </div>
+            <div class="modal-body" id="confirm-modal-body" style="font-size:13px; line-height:1.5; color:#334155;">
+                คุณแน่ใจหรือไม่ว่าต้องการดำเนินการนี้?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-sync-action" onclick="closeConfirmModal(false)" id="confirm-btn-cancel">ยกเลิก</button>
+                <button type="button" class="btn-sync-action primary" onclick="closeConfirmModal(true)" id="confirm-btn-ok">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const appIframe = document.getElementById('app-iframe');
         const popupWrapper = document.getElementById('popup-wrapper');
@@ -196,9 +555,167 @@
         const btnOpenDirect = document.getElementById('btn-open-direct');
         const langPicker = document.getElementById('lang-picker');
 
+        // Translations dictionary for top shell
+        const UI_STRINGS = {
+            en: {
+                treeHistory: '🌳 Tree History',
+                linearHistory: '📜 Linear History',
+                closedTabs: '❌ Closed Tabs',
+                bookmarks: '🔖 Bookmarks',
+                options: '⚙️ Options',
+                popup: '🪟 Extension Popup',
+                backupBtn: '☁️ Backup & Sync',
+                fullPage: '↗ Full Page',
+                modalTitle: 'Backup & Restore (Google Drive & JSON)',
+                driveNotConnected: 'Not connected to Google Drive',
+                driveConnected: 'Google Drive Connected',
+                driveHint: 'Connect Google Drive to protect history records from being deleted or lost',
+                gsi: 'Sign in with Google',
+                signout: 'Sign out of Google',
+                backupActions: 'Backup Operations',
+                backupDriveBtn: 'Backup to Google Drive',
+                exportLocalBtn: 'Export Local JSON',
+                importLocalBtn: 'Import Local JSON',
+                driveBackupsTitle: 'Backups in Google Drive',
+                refreshBtn: 'Refresh',
+                closeModal: 'Close',
+                confirmTitle: 'Confirm Action',
+                confirmRestore: 'Are you sure you want to restore this backup? Your history records and settings will be restored.',
+                confirmDelete: 'Are you sure you want to delete this backup from Google Drive?',
+                confirmOk: 'Confirm',
+                confirmCancel: 'Cancel',
+                filenameTh: 'File Name',
+                dateTh: 'Backup Date',
+                actionsTh: 'Actions',
+                restoreBtn: 'Restore',
+                deleteBtn: 'Delete',
+                backingUp: 'Backing up to Google Drive...',
+                backupSuccess: 'Successfully backed up to Google Drive!',
+                restoring: 'Restoring backup data...',
+                restoreSuccess: 'Backup restored successfully! Reloading views...',
+                noBackups: 'No backups found on Google Drive.',
+                loginToView: 'Sign in with Google to view backups on Google Drive'
+            },
+            zh_CN: {
+                treeHistory: '🌳 树形历史',
+                linearHistory: '📜 线性历史',
+                closedTabs: '❌ 最近关闭',
+                bookmarks: '🔖 书签管理',
+                options: '⚙️ 设置选项',
+                popup: '🪟 插件弹窗',
+                backupBtn: '☁️ 备份与同步',
+                fullPage: '↗ 全屏模式',
+                modalTitle: '备份与恢复 (Google Drive & 本地JSON)',
+                driveNotConnected: '未连接 Google Drive',
+                driveConnected: '已连接 Google Drive',
+                driveHint: '连接 Google Drive 以防止浏览历史被意外删除或丢失',
+                gsi: '使用 Google 登录',
+                signout: '退出 Google 账号',
+                backupActions: '备份操作',
+                backupDriveBtn: '备份至 Google Drive',
+                exportLocalBtn: '导出本地 JSON',
+                importLocalBtn: '导入本地 JSON',
+                driveBackupsTitle: 'Google Drive 上的备份文件',
+                refreshBtn: '刷新',
+                closeModal: '关闭',
+                confirmTitle: '确认操作',
+                confirmRestore: '确定要恢复此备份吗？您的浏览记录和配置将被恢复。',
+                confirmDelete: '确定要从 Google Drive 中删除此备份吗？',
+                confirmOk: '确认',
+                confirmCancel: '取消',
+                filenameTh: '文件名',
+                dateTh: '备份时间',
+                actionsTh: '操作',
+                restoreBtn: '恢复',
+                deleteBtn: '删除',
+                backingUp: '正在备份到 Google Drive...',
+                backupSuccess: '成功备份到 Google Drive！',
+                restoring: '正在恢复备份数据...',
+                restoreSuccess: '备份数据恢复成功！正在刷新视图...',
+                noBackups: 'Google Drive 上暂无备份文件。',
+                loginToView: '请登录 Google 账号以查看云端备份文件'
+            },
+            th: {
+                treeHistory: '🌳 ประวัติแบบต้นไม้',
+                linearHistory: '📜 ประวัติแบบเรียงลำดับ',
+                closedTabs: '❌ แท็บที่ปิดไปแล้ว',
+                bookmarks: '🔖 บุ๊กมาร์ก',
+                options: '⚙️ การตั้งค่า',
+                popup: '🪟 ป๊อปอัปส่วนขยาย',
+                backupBtn: '☁️ สำรองข้อมูล Google Drive',
+                fullPage: '↗ เปิดหน้าเต็ม',
+                modalTitle: 'สำรองและกู้คืนข้อมูล (Google Drive & JSON)',
+                driveNotConnected: 'ยังไม่ได้เชื่อมต่อ Google Drive',
+                driveConnected: 'เชื่อมต่อ Google Drive แล้ว',
+                driveHint: 'เชื่อมต่อ Google Drive เพื่อป้องกันข้อมูลประวัติหายจากการถูกลบ',
+                gsi: 'ลงชื่อเข้าใช้ด้วย Google',
+                signout: 'ออกจากระบบ Google',
+                backupActions: 'ดำเนินการสำรองข้อมูล',
+                backupDriveBtn: 'สำรองข้อมูลไป Google Drive',
+                exportLocalBtn: 'ส่งออก JSON ลงเครื่อง',
+                importLocalBtn: 'นำเข้า JSON จากเครื่อง',
+                driveBackupsTitle: 'ไฟล์สำรองใน Google Drive',
+                refreshBtn: 'รีเฟรช',
+                closeModal: 'ปิด',
+                confirmTitle: 'ยืนยันการดำเนินการ',
+                confirmRestore: 'ยืนยันการนำเข้าข้อมูลสำรอง? ข้อมูลประวัติการท่องเว็บและการตั้งค่าจะถูกรวมหรือกู้คืน',
+                confirmDelete: 'ต้องการลบไฟล์สำรองนี้ออกจาก Google Drive หรือไม่?',
+                confirmOk: 'ยืนยัน',
+                confirmCancel: 'ยกเลิก',
+                filenameTh: 'ชื่อไฟล์',
+                dateTh: 'วันที่สำรอง',
+                actionsTh: 'จัดการ',
+                restoreBtn: 'กู้คืน',
+                deleteBtn: 'ลบ',
+                backingUp: 'กำลังสำรองข้อมูลไปยัง Google Drive...',
+                backupSuccess: 'สำรองข้อมูลไปยัง Google Drive เรียบร้อยแล้ว!',
+                restoring: 'กำลังกู้คืนข้อมูลสำรอง...',
+                restoreSuccess: 'กู้คืนข้อมูลสำรองสำเร็จ! กำลังรีเฟรชหน้าเว็บ...',
+                noBackups: 'ไม่พบไฟล์สำรองใน Google Drive',
+                loginToView: 'เข้าสู่ระบบ Google เพื่อดูไฟล์สำรองบน Google Drive'
+            }
+        };
+
         // Init language picker
-        const currentLang = localStorage.getItem('tsh-lang') || (navigator.language && navigator.language.startsWith('zh') ? 'zh_CN' : 'en');
+        let currentLang = localStorage.getItem('tsh-lang');
+        if (!currentLang) {
+            const navLang = navigator.language || '';
+            currentLang = navLang.startsWith('th') ? 'th' : (navLang.startsWith('zh') ? 'zh_CN' : 'en');
+            localStorage.setItem('tsh-lang', currentLang);
+        }
         langPicker.value = currentLang;
+
+        function updateUITexts() {
+            const t = UI_STRINGS[currentLang] || UI_STRINGS.en;
+            document.getElementById('tab-nav-tree').textContent = t.treeHistory;
+            document.getElementById('tab-nav-linear').textContent = t.linearHistory;
+            document.getElementById('tab-nav-closed').textContent = t.closedTabs;
+            document.getElementById('tab-nav-bookmark').textContent = t.bookmarks;
+            document.getElementById('tab-nav-options').textContent = t.options;
+            document.getElementById('tab-nav-popup').textContent = t.popup;
+            document.getElementById('label-backup-btn').textContent = t.backupBtn;
+            document.getElementById('label-full-page').textContent = t.fullPage;
+
+            document.getElementById('modal-title-text').textContent = t.modalTitle;
+            document.getElementById('label-gsi').textContent = t.gsi;
+            document.getElementById('label-signout').textContent = t.signout;
+            document.getElementById('label-backup-actions').textContent = t.backupActions;
+            document.getElementById('label-backup-drive-btn').textContent = t.backupDriveBtn;
+            document.getElementById('label-export-local-btn').textContent = t.exportLocalBtn;
+            document.getElementById('label-import-local-btn').textContent = t.importLocalBtn;
+            document.getElementById('label-drive-backups-title').textContent = t.driveBackupsTitle;
+            document.getElementById('label-refresh-btn').textContent = t.refreshBtn;
+            document.getElementById('label-close-modal').textContent = t.closeModal;
+
+            document.getElementById('th-filename').textContent = t.filenameTh;
+            document.getElementById('th-date').textContent = t.dateTh;
+            document.getElementById('th-actions').textContent = t.actionsTh;
+
+            document.getElementById('confirm-btn-ok').textContent = t.confirmOk;
+            document.getElementById('confirm-btn-cancel').textContent = t.confirmCancel;
+        }
+
+        updateUITexts();
 
         function switchView(src, tabEl) {
             if (tabEl) {
@@ -219,7 +736,9 @@
         }
 
         function changeLanguage(lang) {
+            currentLang = lang;
             localStorage.setItem('tsh-lang', lang);
+            updateUITexts();
             if (appIframe.style.display !== 'none') {
                 appIframe.contentWindow.location.reload();
             } else {
@@ -227,13 +746,358 @@
             }
         }
 
-        // Listen for internal navigation from within iframes
+        // -------------------------------------------------------------------
+        // Google Drive Sync & Backup Handlers
+        // -------------------------------------------------------------------
+
+        let confirmCallback = null;
+
+        function showConfirm(title, message, callback) {
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-body').textContent = message;
+            confirmCallback = callback;
+            document.getElementById('confirm-modal-overlay').classList.add('open');
+        }
+
+        function closeConfirmModal(accepted) {
+            document.getElementById('confirm-modal-overlay').classList.remove('open');
+            if (confirmCallback) {
+                const cb = confirmCallback;
+                confirmCallback = null;
+                cb(accepted);
+            }
+        }
+
+        function showBanner(msg, type = 'info') {
+            const banner = document.getElementById('backup-alert-banner');
+            banner.textContent = msg;
+            banner.className = `backup-status-banner ${type}`;
+            if (type === 'success') {
+                setTimeout(() => { banner.style.display = 'none'; }, 6000);
+            }
+        }
+
+        function hideBanner() {
+            document.getElementById('backup-alert-banner').style.display = 'none';
+        }
+
+        function openBackupModal() {
+            document.getElementById('backup-modal-overlay').classList.add('open');
+            hideBanner();
+            checkAuthState();
+        }
+
+        function closeBackupModal() {
+            document.getElementById('backup-modal-overlay').classList.remove('open');
+        }
+
+        function handleOverlayClick(e) {
+            if (e.target.id === 'backup-modal-overlay') {
+                closeBackupModal();
+            }
+        }
+
+        // Initialize Firebase on load
+        if (window.GoogleDriveSync) {
+            window.GoogleDriveSync.initFirebase().then(() => {
+                window.GoogleDriveSync.initAuthListener((user, token) => {
+                    updateAuthUI(user);
+                    if (token) loadDriveBackupsList();
+                }, () => {
+                    updateAuthUI(null);
+                });
+            });
+        }
+
+        function checkAuthState() {
+            if (!window.GoogleDriveSync) return;
+            const user = window.GoogleDriveSync.getCurrentUser();
+            updateAuthUI(user);
+            if (window.GoogleDriveSync.getAccessToken()) {
+                loadDriveBackupsList();
+            }
+        }
+
+        function updateAuthUI(user) {
+            const t = UI_STRINGS[currentLang] || UI_STRINGS.en;
+            const dot = document.getElementById('drive-conn-dot');
+            const status = document.getElementById('drive-conn-status');
+            const email = document.getElementById('drive-account-email');
+            const loginBtn = document.getElementById('btn-google-login');
+            const logoutBtn = document.getElementById('btn-google-logout');
+
+            if (user) {
+                dot.style.background = '#22c55e';
+                status.textContent = t.driveConnected;
+                email.textContent = `${user.displayName || 'Google User'} (${user.email || ''})`;
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-flex';
+                if (!window.GoogleDriveSync.getAccessToken()) {
+                    document.getElementById('drive-backups-table').style.display = 'none';
+                    document.getElementById('drive-backups-loading').style.display = 'block';
+                    document.getElementById('drive-backups-loading').innerHTML = `
+                        <div style="padding:10px 0; color:#475569; font-size:13px;">
+                            ${currentLang === 'th' ? 'ต้องทำการเชื่อมต่อเพื่อเข้าถึงไฟล์ใน Google Drive:' : 'Drive connection is needed to access backup files:'}
+                            <div style="margin-top:8px;">
+                                <button type="button" class="btn-sync-action primary" onclick="handleReauthDrive()" style="font-size:12px; padding:6px 14px;">
+                                    🔑 ${currentLang === 'th' ? 'เชื่อมต่อและให้สิทธิ์ Google Drive' : 'Connect & Authorize Google Drive'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                dot.style.background = '#94a3b8';
+                status.textContent = t.driveNotConnected;
+                email.textContent = t.driveHint;
+                loginBtn.style.display = 'inline-flex';
+                logoutBtn.style.display = 'none';
+                document.getElementById('drive-backups-table').style.display = 'none';
+                document.getElementById('drive-backups-loading').style.display = 'block';
+                document.getElementById('drive-backups-loading').textContent = t.loginToView;
+            }
+        }
+
+        async function handleGoogleSignIn() {
+            const t = UI_STRINGS[currentLang] || UI_STRINGS.en;
+            try {
+                showBanner('Connecting to Google...', 'info');
+                const res = await window.GoogleDriveSync.signInWithGoogle(true);
+                updateAuthUI(res.user);
+                showBanner(t.driveConnected, 'success');
+                await loadDriveBackupsList();
+            } catch (err) {
+                console.error(err);
+                showBanner(`Sign in failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function handleReauthDrive() {
+            const t = UI_STRINGS[currentLang] || UI_STRINGS.en;
+            try {
+                showBanner(currentLang === 'th' ? 'กำลังเชื่อมต่อและขอสิทธิ์ Google Drive...' : 'Connecting and requesting Google Drive permissions...', 'info');
+                await window.GoogleDriveSync.signOutGoogle();
+                const res = await window.GoogleDriveSync.signInWithGoogle(true);
+                updateAuthUI(res.user);
+                showBanner(t.driveConnected, 'success');
+                await loadDriveBackupsList();
+            } catch (err) {
+                console.error(err);
+                showBanner(`Authentication failed: ${err.message}`, 'error');
+            }
+        }
+        window.handleReauthDrive = handleReauthDrive;
+        window.handleGoogleSignIn = handleGoogleSignIn;
+
+        async function handleGoogleSignOut() {
+            try {
+                await window.GoogleDriveSync.signOutGoogle();
+                updateAuthUI(null);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function handleBackupToDrive() {
+            const t = UI_STRINGS[currentLang] || UI_STRINGS.en;
+            const btn = document.getElementById('btn-backup-drive');
+            btn.disabled = true;
+            try {
+                showBanner(t.backingUp, 'info');
+                const res = await window.GoogleDriveSync.uploadBackupToDrive();
+                showBanner(`${t.backupSuccess} (${res.fileName})`, 'success');
+                await loadDriveBackupsList();
+            } catch (err) {
+                console.error(err);
+                if (err.isScopeError || (err.message && (err.message.includes('insufficient') || err.message.includes('403')))) {
+                    showBanner(currentLang === 'th'
+                        ? 'สิทธิ์ไม่เพียงพอ: กรุณากดปุ่ม "เชื่อมต่อและให้สิทธิ์ Google Drive อีกครั้ง" ด้านล่าง'
+                        : 'Insufficient permission: Please click "Re-authorize Google Drive with Permissions" below', 'error');
+                    await loadDriveBackupsList();
+                } else {
+                    showBanner(`Backup error: ${err.message}`, 'error');
+                }
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function loadDriveBackupsList() {
+            const t = UI_STRINGS[currentLang] || UI_STRINGS.en;
+            const loading = document.getElementById('drive-backups-loading');
+            const table = document.getElementById('drive-backups-table');
+            const tbody = document.getElementById('drive-backups-tbody');
+
+            if (!window.GoogleDriveSync || !window.GoogleDriveSync.getAccessToken()) {
+                loading.style.display = 'block';
+                loading.textContent = t.loginToView;
+                table.style.display = 'none';
+                return;
+            }
+
+            loading.style.display = 'block';
+            loading.textContent = 'Loading backups from Google Drive...';
+            table.style.display = 'none';
+
+            try {
+                const files = await window.GoogleDriveSync.listDriveBackups();
+                loading.style.display = 'none';
+
+                if (files.length === 0) {
+                    loading.style.display = 'block';
+                    loading.textContent = t.noBackups;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                for (const file of files) {
+                    const tr = document.createElement('tr');
+                    const d = new Date(file.createdTime || file.modifiedTime);
+                    const dateFormatted = d.toLocaleString();
+
+                    tr.innerHTML = `
+                        <td style="font-weight:500;">
+                            📄 ${escapeHtml(file.name)}
+                            <div style="font-size:11px; color:#64748b;">${file.description || ''}</div>
+                        </td>
+                        <td>${dateFormatted}</td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <button type="button" class="btn-sync-action success" style="padding:3px 8px; font-size:11px;" onclick="promptRestoreDrive('${file.id}', '${escapeHtml(file.name)}')">
+                                ${t.restoreBtn}
+                            </button>
+                            <button type="button" class="btn-sync-action danger" style="padding:3px 8px; font-size:11px;" onclick="promptDeleteDrive('${file.id}', '${escapeHtml(file.name)}')">
+                                ${t.deleteBtn}
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+                table.style.display = 'table';
+            } catch (err) {
+                console.error(err);
+                loading.style.display = 'block';
+                const isScope = err.isScopeError || (err.message && (err.message.includes('insufficient') || err.message.includes('403')));
+                if (isScope) {
+                    loading.innerHTML = `
+                        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:14px; text-align:left; color:#92400e;">
+                            <div style="font-weight:600; margin-bottom:6px; font-size:13px; display:flex; align-items:center; gap:6px;">
+                                ⚠️ ${currentLang === 'th' ? 'สิทธิ์การเข้าถึง Google Drive ไม่เพียงพอ (403)' : 'Insufficient Google Drive Permissions (403)'}
+                            </div>
+                            <div style="font-size:12px; line-height:1.5; color:#78350f; margin-bottom:12px;">
+                                ${currentLang === 'th'
+                                    ? 'บัญชี Google ของคุณยังไม่ได้เปิดใช้งานการเข้าถึงไฟล์ใน Google Drive ให้กับแอปนี้ กรุณากดปุ่มด้านล่างเพื่อเข้าสู่ระบบใหม่ และ<b>ทำเครื่องหมายถูกที่ช่อง "ดู แก้ไข สร้าง และลบไฟล์ Google Drive ที่คุณใช้กับแอปนี้"</b> ในหน้าต่างยืนยันความยินยอมของ Google'
+                                    : 'Your Google account has not granted permission to access files in Google Drive for this app. Please click below to re-authenticate and <b>make sure to check the box granting Google Drive file access</b> on Google\'s consent prompt.'}
+                            </div>
+                            <button type="button" class="btn-sync-action primary" onclick="handleReauthDrive()" style="font-size:12px; padding:7px 16px;">
+                                🔑 ${currentLang === 'th' ? 'เชื่อมต่อและให้สิทธิ์ Google Drive อีกครั้ง' : 'Re-authorize Google Drive with Permissions'}
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    loading.textContent = `Error loading backups: ${err.message}`;
+                }
+            }
+        }
+
+        function promptRestoreDrive(fileId, fileName) {
+            const t = UI_STRINGS[currentLang] || UI_STRINGS.en;
+            showConfirm(
+                t.confirmTitle,
+                `${t.confirmRestore} (${fileName})`,
+                async (confirmed) => {
+                    if (!confirmed) return;
+                    try {
+                        showBanner(t.restoring, 'info');
+                        const res = await window.GoogleDriveSync.restoreBackupFromDrive(fileId);
+                        showBanner(t.restoreSuccess, 'success');
+                        setTimeout(() => {
+                            if (appIframe) appIframe.contentWindow.location.reload();
+                        }, 1200);
+                    } catch (err) {
+                        console.error(err);
+                        showBanner(`Restore failed: ${err.message}`, 'error');
+                    }
+                }
+            );
+        }
+
+        function promptDeleteDrive(fileId, fileName) {
+            const t = UI_STRINGS[currentLang] || UI_STRINGS.en;
+            showConfirm(
+                t.confirmTitle,
+                `${t.confirmDelete} (${fileName})`,
+                async (confirmed) => {
+                    if (!confirmed) return;
+                    try {
+                        await window.GoogleDriveSync.deleteBackupFromDrive(fileId);
+                        showBanner('Deleted backup file successfully.', 'success');
+                        await loadDriveBackupsList();
+                    } catch (err) {
+                        console.error(err);
+                        showBanner(`Delete failed: ${err.message}`, 'error');
+                    }
+                }
+            );
+        }
+
+        async function handleExportLocal() {
+            try {
+                const res = await window.GoogleDriveSync.exportLocalBackup();
+                showBanner(`Exported local file: ${res.fileName}`, 'success');
+            } catch (err) {
+                console.error(err);
+                showBanner(`Export failed: ${err.message}`, 'error');
+            }
+        }
+
+        function handleImportLocal(input) {
+            const t = UI_STRINGS[currentLang] || UI_STRINGS.en;
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            showConfirm(
+                t.confirmTitle,
+                `${t.confirmRestore} (${file.name})`,
+                async (confirmed) => {
+                    if (!confirmed) {
+                        input.value = '';
+                        return;
+                    }
+                    try {
+                        showBanner(t.restoring, 'info');
+                        await window.GoogleDriveSync.importLocalBackup(file);
+                        showBanner(t.restoreSuccess, 'success');
+                        setTimeout(() => {
+                            if (appIframe) appIframe.contentWindow.location.reload();
+                        }, 1200);
+                    } catch (err) {
+                        console.error(err);
+                        showBanner(`Restore failed: ${err.message}`, 'error');
+                    } finally {
+                        input.value = '';
+                    }
+                }
+            );
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Listen for internal navigation and backup messages from within iframes
         window.addEventListener('message', function(e) {
-            if (e.data && e.data.type === 'tsh-navigate') {
-                const target = e.data.target;
-                const tab = document.querySelector(`.nav-tab[data-src="${target}"]`);
-                if (tab) {
-                    switchView(target, tab);
+            if (e.data) {
+                if (e.data.type === 'tsh-navigate') {
+                    const target = e.data.target;
+                    const tab = document.querySelector(`.nav-tab[data-src="${target}"]`);
+                    if (tab) {
+                        switchView(target, tab);
+                    }
+                } else if (e.data.type === 'tsh-open-backup') {
+                    openBackupModal();
+                } else if (e.data.type === 'tsh-backup-restored') {
+                    if (appIframe && appIframe.contentWindow) {
+                        appIframe.contentWindow.location.reload();
+                    }
                 }
             }
         });

@@ -411,3 +411,96 @@ test('a filter tag is a toggle: clicking it again clears the box', async () => {
     assert.equal(input.value, '', 'clicking it again clears it');
     assert.equal(tree.getKeyword(), '');
 });
+
+test('advanced search filters by source and destination path', () => {
+    const nodes = [
+        { id: 1, pId: 0, name: 'Google Search', t: 'https://google.com/search' },
+        { id: 2, pId: 1, name: 'Documentation Index', t: 'https://docs.site/index' },
+        { id: 3, pId: 2, name: 'API Reference Target', t: 'https://docs.site/api' },
+        { id: 4, pId: 0, name: 'Other Source', t: 'https://other.com/' },
+        { id: 5, pId: 4, name: 'Other Child', t: 'https://other.com/child' },
+    ];
+    // Path from Google to API Reference
+    const html = treeHtml(nodes, { treeId: 'tree', source: 'Google', destination: 'API' });
+    assert.match(html, /data-tid="1"/, 'source node is included');
+    assert.match(html, /data-tid="2"/, 'intermediate path node is included');
+    assert.match(html, /data-tid="3"/, 'destination node is included');
+    assert.doesNotMatch(html, /data-tid="4"/, 'unrelated branch is excluded');
+    assert.doesNotMatch(html, /data-tid="5"/, 'unrelated branch child is excluded');
+    assert.match(html, /\[ต้นทาง\]/, 'source badge is rendered');
+    assert.match(html, /\[ปลายทาง\]/, 'destination badge is rendered');
+    assert.match(html, /\[ทางผ่าน\]/, 'intermediate path badge is rendered');
+});
+
+test('advanced search filters by source only (shows origin and all its subbranches)', () => {
+    const nodes = [
+        { id: 1, pId: 0, name: 'Root Source', t: 'https://source.com/' },
+        { id: 2, pId: 1, name: 'Branch 1', t: 'https://source.com/b1' },
+        { id: 3, pId: 2, name: 'Branch 1 Sub', t: 'https://source.com/b1/sub' },
+        { id: 4, pId: 0, name: 'Ignored Root', t: 'https://ignored.com/' },
+    ];
+    const html = treeHtml(nodes, { treeId: 'tree', source: 'Root Source' });
+    assert.match(html, /data-tid="1"/);
+    assert.match(html, /data-tid="2"/);
+    assert.match(html, /data-tid="3"/);
+    assert.doesNotMatch(html, /data-tid="4"/);
+    assert.match(html, /\[ต้นทาง\]/);
+});
+
+test('advanced search filters by destination only (shows target and ancestor origin chain)', () => {
+    const nodes = [
+        { id: 1, pId: 0, name: 'Root A', t: 'https://a.com/' },
+        { id: 2, pId: 1, name: 'Target Destination', t: 'https://target.com/' },
+        { id: 3, pId: 0, name: 'Root B', t: 'https://b.com/' },
+        { id: 4, pId: 3, name: 'Child B', t: 'https://b.com/child' },
+    ];
+    const html = treeHtml(nodes, { treeId: 'tree', destination: 'Target' });
+    assert.match(html, /data-tid="1"/, 'ancestor is preserved');
+    assert.match(html, /data-tid="2"/, 'destination is shown');
+    assert.doesNotMatch(html, /data-tid="3"/, 'unrelated root is excluded');
+    assert.doesNotMatch(html, /data-tid="4"/, 'unrelated child is excluded');
+    assert.match(html, /\[ปลายทาง\]/);
+});
+
+test('advanced search filters by start date and end date', () => {
+    const nodes = [
+        { id: 1, pId: 0, name: 'Old Visit', t: 'https://old.com/', visitTime: new Date('2026-10-01T12:00:00').getTime() },
+        { id: 2, pId: 0, name: 'Target Day Visit', t: 'https://target-day.com/', visitTime: new Date('2026-10-10T14:30:00').getTime() },
+        { id: 3, pId: 2, name: 'Target Day Child', t: 'https://target-day.com/child', visitTime: new Date('2026-10-10T15:00:00').getTime() },
+        { id: 4, pId: 0, name: 'Future Visit', t: 'https://future.com/', visitTime: new Date('2026-10-25T10:00:00').getTime() },
+    ];
+    const html = treeHtml(nodes, { treeId: 'tree', startDate: '2026-10-09', endDate: '2026-10-11' });
+    assert.doesNotMatch(html, /Old Visit/, 'visit before start date is excluded');
+    assert.match(html, /Target Day Visit/, 'visit in range is included');
+    assert.match(html, /Target Day Child/, 'child visit in range is included');
+    assert.doesNotMatch(html, /Future Visit/, 'visit after end date is excluded');
+});
+
+test('advanced search combines source, destination, start date, and end date', () => {
+    const nodes = [
+        // Path in target date range
+        { id: 1, pId: 0, name: 'Google Search October', t: 'https://google.com/search', visitTime: new Date('2026-10-14T10:00:00').getTime() },
+        { id: 2, pId: 1, name: 'GitHub Repo October', t: 'https://github.com/project', visitTime: new Date('2026-10-14T10:05:00').getTime() },
+        { id: 3, pId: 2, name: 'Releases Target October', t: 'https://github.com/project/releases', visitTime: new Date('2026-10-14T10:10:00').getTime() },
+        // Same source/dest path but outside target date range
+        { id: 4, pId: 0, name: 'Google Search September', t: 'https://google.com/search', visitTime: new Date('2026-09-01T10:00:00').getTime() },
+        { id: 5, pId: 4, name: 'GitHub Repo September', t: 'https://github.com/project', visitTime: new Date('2026-09-01T10:05:00').getTime() },
+        { id: 6, pId: 5, name: 'Releases Target September', t: 'https://github.com/project/releases', visitTime: new Date('2026-09-01T10:10:00').getTime() },
+    ];
+    const html = treeHtml(nodes, {
+        treeId: 'tree',
+        source: 'Google',
+        destination: 'Releases',
+        startDate: '2026-10-10',
+        endDate: '2026-10-15',
+    });
+    assert.match(html, /data-tid="1"/, 'source in date range is included');
+    assert.match(html, /data-tid="2"/, 'path node in date range is included');
+    assert.match(html, /data-tid="3"/, 'destination in date range is included');
+    assert.doesNotMatch(html, /data-tid="4"/, 'out-of-range path is excluded');
+    assert.doesNotMatch(html, /data-tid="5"/);
+    assert.doesNotMatch(html, /data-tid="6"/);
+    assert.match(html, /\[ต้นทาง\]/, 'source badge is rendered');
+    assert.match(html, /\[ปลายทาง\]/, 'destination badge is rendered');
+    assert.match(html, /\[ทางผ่าน\]/, 'intermediate path badge is rendered');
+});

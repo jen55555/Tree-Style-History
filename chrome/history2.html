@@ -28,6 +28,8 @@
             <li><a href="closed.html" class="lang" data-lang-string="closeHistory"></a></li>
             <li><a href="bookmark.html" class="lang" data-lang-string="linerBookMark"></a></li>
             <li><a href="options.html" class="lang" data-lang-string="options"></a></li>
+            <li><a href="#" id="menu-drive-backup" class="lang" data-lang-string="googleDriveBackup"></a></li>
+            <li><a href="#" id="menu-trash-recovery" class="lang" data-lang-string="trashRecovery"></a></li>
         </ul>
 
     </div>
@@ -39,7 +41,73 @@
                     <h1 class="lang" id="header-text" data-lang-string="allHistory"></h1>
                 </td>
                 <td id="search">
-
+                    <div id="adv-search-container">
+                        <div class="search-primary-bar">
+                            <input id="rh-search" type="text" placeholder="Filter / ค้นหา..." value="" class="search-box">
+                            <button id="btn-toggle-adv" type="button" class="btn-adv-toggle" title="Advanced Search">
+                                <span class="lang" data-lang-string="advancedSearch">⚙ ค้นหาละเอียด</span>
+                            </button>
+                            <button id="btn-clear-search" type="button" class="btn-adv-clear" title="Clear">✕</button>
+                        </div>
+                        <div id="adv-search-drawer" style="display:none;">
+                            <div class="adv-row">
+                                <div class="adv-col">
+                                    <label class="adv-field-label" for="rh-search-source">
+                                        <span class="badge-source-label lang" data-lang-string="searchSource">ต้นทาง (Origin/Source)</span>:
+                                    </label>
+                                    <input id="rh-search-source" type="text" class="search-box adv-input" placeholder="ค้นหาเว็บต้นทาง เช่น google, reddit...">
+                                </div>
+                                <div class="adv-arrow-col">➔</div>
+                                <div class="adv-col">
+                                    <label class="adv-field-label" for="rh-search-dest">
+                                        <span class="badge-dest-label lang" data-lang-string="searchDestination">ปลายทาง (Destination)</span>:
+                                    </label>
+                                    <input id="rh-search-dest" type="text" class="search-box adv-input" placeholder="ค้นหาเว็บปลายทาง เช่น github, vite...">
+                                </div>
+                                <div class="adv-col adv-col-trans">
+                                    <label class="adv-field-label" for="rh-search-trans">
+                                        <span class="lang" data-lang-string="searchTransition">ประเภท:</span>
+                                    </label>
+                                    <select id="rh-search-trans" class="select adv-select">
+                                        <option value="">ทั้งหมด (All)</option>
+                                        <option value="link">🔗 Link (ลิงก์)</option>
+                                        <option value="typed">⌨ Typed (พิมพ์)</option>
+                                        <option value="auto_bookmark">☆ Bookmark</option>
+                                        <option value="reload">🔄 Reload</option>
+                                        <option value="keyword">🔍 Search</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="adv-row adv-row-date">
+                                <div class="adv-col">
+                                    <label class="adv-field-label" for="rh-search-start-date">
+                                        <span class="badge-date-label lang" data-lang-string="searchStartDate">📅 วันเริ่มหา (Start Date)</span>:
+                                    </label>
+                                    <input id="rh-search-start-date" type="date" class="search-box adv-input adv-date-input">
+                                </div>
+                                <div class="adv-arrow-col">➔</div>
+                                <div class="adv-col">
+                                    <label class="adv-field-label" for="rh-search-end-date">
+                                        <span class="badge-date-label lang" data-lang-string="searchEndDate">📅 วันที่สิ้นสุด (End Date)</span>:
+                                    </label>
+                                    <input id="rh-search-end-date" type="date" class="search-box adv-input adv-date-input">
+                                </div>
+                                <div class="adv-col adv-col-presets">
+                                    <label class="adv-field-label">
+                                        <span class="lang" data-lang-string="quickDateFilter">ช่วงเวลาด่วน:</span>
+                                    </label>
+                                    <div class="date-presets-btn-group">
+                                        <button type="button" class="btn-preset-date lang" data-preset="today" data-lang-string="todayPreset">วันนี้</button>
+                                        <button type="button" class="btn-preset-date lang" data-preset="yesterday" data-lang-string="yesterdayPreset">เมื่อวาน</button>
+                                        <button type="button" class="btn-preset-date lang" data-preset="7days" data-lang-string="last7DaysPreset">7 วัน</button>
+                                        <button type="button" class="btn-preset-date lang" data-preset="30days" data-lang-string="last30DaysPreset">30 วัน</button>
+                                        <button type="button" class="btn-preset-date lang" data-preset="all" data-lang-string="allTimePreset">ทั้งหมด</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="adv-search-summary" class="adv-summary" style="display:none;"></div>
+                        </div>
+                    </div>
                 </td>
             </tr>
 
